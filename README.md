@@ -1,5 +1,8 @@
 # Todo
 
+## Setup infrastructure
+- sign up and use the credits (svenja sign up, Matheus setup project)
+
 ## Data part --> fred implement and see if it can be split up and tell us
 - preprocessing the data (take from covnet)
 
