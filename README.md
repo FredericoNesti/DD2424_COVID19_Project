@@ -18,13 +18,16 @@ test_COVIDx2.txt: This file contains the samples used for testing COVIDNet-CXR.)
 
 I used the following formula to discover the padding and stride for each step:
 
-$\lfloor \frac{n + 2p -f }{s} + 1  \rfloor \times \lfloor \frac{n + 2p -f }{s} + 1  \rfloor$
+<p align="center">
+  <img width="200" height="100" src="images/equation_cnn_out.png">
+</p>
 
 Which leads us to stride = 2 and padding = 3 when applying the Conv7x7 and stride =2 and padding = 0 for the Conv1x1.
 
 Inside the PEPX, we have a DWConv3x3. This is a convolution that doesn’t change the format of the input:
-
-![DWConv3x3 representation.](images/Depthwise_convolution.png)
+<p align="center">
+  <img width="460" height="300" src="images/Depthwise_convolution.png">
+</p>
 
 We are not sure exactly how the layers connect to each other because there are too many arrows, but we notice that the upper part is made of connections between PEPXs and the Conv1x1 and the arrow in the bottom part are between PEPXs.
 
