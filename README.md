@@ -13,7 +13,30 @@ test_COVIDx2.txt: This file contains the samples used for testing COVIDNet-CXR.)
 - batch re-balancing strategy to promote better distribution of each infection type at a batch level  --> done in data.py (Covid Net)
 
 ## Network architecture (Matheus)
-- 
+- We will implement the following architecture for COVID-NET:
+![COVID-Net Architecture.](images/COVID-NET.png)
+
+I used the following formula to discover the padding and stride for each step:
+
+$$\lfloor \frac{n + 2p -f }{s} + 1  \rfloor \times \lfloor \frac{n + 2p -f }{s} + 1  \rfloor$$
+
+Which leads us to stride = 2 and padding = 3 when applying the Conv7x7 and stride =2 and padding = 0 for the Conv1x1.
+
+Inside the PEPX, we have a DWConv3x3. This is a convolution that doesn’t change the format of the input:
+
+![DWConv3x3 representation.](images/Depthwise_convolution.png)
+
+We are not sure exactly how the layers connect to each other because there are too many arrows, but we notice that the upper part is made of connections between PEPXs and the Conv1x1 and the arrow in the bottom part are between PEPXs.
+
+For now, we will use our own parameters for projection and expansion inside the PEPXs, since they don’t mention it on the paper.
+
+Where I studied for those conclusions:
+Depthwise-separable-convolutions: <a href="https://eli.thegreenplace.net/2018/depthwise-separable-convolutions-for-machine-learning/"> link </a> 
+
+When we have muldiple dimentions on image of feature map: <a href="https://www.researchgate.net/post/How_will_channels_RGB_effect_convolutional_neural_network"> link </a> 
+
+1x1 convolutions : <a href="https://machinelearningmastery.com/introduction-to-1x1-convolutions-to-reduce-the-complexity-of-convolutional-neural-networks/"> link </a> 
+
 
 ## Training (Svenja)
 - pretrained on ImageNet dataset
