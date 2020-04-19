@@ -33,7 +33,8 @@ Which leads us to stride = 2 and padding = 3 when applying the Conv7x7 and strid
 
 - For now, we will use our own parameters for projection and expansion inside the PEPXs, since they don’t mention it on the paper.
 
-- Where I studied for those conclusions:
+Where I studied for those conclusions:
+
 Depthwise-separable-convolutions: <a href="https://eli.thegreenplace.net/2018/depthwise-separable-convolutions-for-machine-learning/"> link </a> 
 
 When we have muldiple dimentions on image of feature map: <a href="https://www.researchgate.net/post/How_will_channels_RGB_effect_convolutional_neural_network"> link </a> 
