@@ -4,9 +4,10 @@
 - sign up and use the credits (svenja sign up, Matheus setup project)
 
 ## Data part --> fred implement and see if it can be split up and tell us
-- preprocessing the data (take from covnet)
+- preprocessing the data (take from covnet) - done in create_COVIDx_v3.ipynb (Covid Net)
 
 - data loader + augmentation (PyTorch)
+- balancing data - done in data.py (Covid Net)
 - augmentation: translation, rotation, horizontal flip, intensity shift
 
 ## Network architecture (Matheus)
