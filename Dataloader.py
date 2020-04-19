@@ -3,6 +3,8 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import ToTensor
 import urllib3
+import urllib.request
+import tarfile
 from torchvision.utils import save_image
 
 import os
@@ -36,10 +38,10 @@ class DATABASE(Dataset):
 
 
     def split_database(self):
-
-
-
         return train_set, val_set, test_set
+
+
+
 
     def add_source_gz(self,extra_source):
         '''
@@ -49,13 +51,54 @@ class DATABASE(Dataset):
         '''
         self.links_gz.append(extra_source)
 
+
+
+
     def add_to_database(self):
+
+
+
+
+
 
     def load_dataset(self,source):
         # in case dataset is online
+        '''
         http = urllib3.PoolManager()
 
+
+        save = []
+        for idx, link in enumerate(links):
+            print('downloading', idx, '...')
+            fn = 'images_%02d.tar.gz' % (idx + 1)
+            ftpstream = urllib.request.urlopen(link + '/' + fn)
+            thetarfile = tarfile.open(fileobj=ftpstream, mode="r|gz")
+            tar = tarfile.open(thetarfile, "r:gz")
+            for member in tar.getmembers():
+                f = tar.extractfile(member)
+                if f is not None:
+                    content = f.read()
+
+                    print('concluded', idx)
+                    save.append(content)
+                    print('')
+        '''
+        
         # in case dataset is inside machine
         self.database.append(ImageFolder(root=source, transform=ToTensor()))
 
-    #def augmentate(self):
+
+
+
+    def augmentate(self, type):
+        
+        if type == 'rotation':
+
+        elif type == 'translation':
+
+        elif type == 'horizontal flip':
+
+        elif type == 'intensity shift':
+
+        else:
+            print('Enter a valid type.')
