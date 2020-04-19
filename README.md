@@ -18,7 +18,7 @@ test_COVIDx2.txt: This file contains the samples used for testing COVIDNet-CXR.)
 
 I used the following formula to discover the padding and stride for each step:
 
-$$\lfloor \frac{n + 2p -f }{s} + 1  \rfloor \times \lfloor \frac{n + 2p -f }{s} + 1  \rfloor$$
+$\lfloor \frac{n + 2p -f }{s} + 1  \rfloor \times \lfloor \frac{n + 2p -f }{s} + 1  \rfloor$
 
 Which leads us to stride = 2 and padding = 3 when applying the Conv7x7 and stride =2 and padding = 0 for the Conv1x1.
 
