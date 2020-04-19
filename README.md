@@ -28,7 +28,7 @@ of epochs=22, batch size=8, factor=0.7, patience=5
 -  sensitivity and PPV for each infection type
 - confusion matrix 
 
---> done in data.py (Covid Net)
+--> done in eval.py (Covid Net)
 
 
 ## Improvenments / Changes to try out
