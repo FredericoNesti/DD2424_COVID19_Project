@@ -58,7 +58,8 @@ class DATABASE(Dataset):
     def add_to_database(self):
 
 
-
+    def load_database_to_server(self):
+        
 
 
 
