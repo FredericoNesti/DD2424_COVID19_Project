@@ -52,6 +52,7 @@ class DATABASE(Dataset):
         self.links_gz.append(extra_source)
 
 
+    def preprocess(self):
 
 
     def add_to_database(self):
@@ -83,7 +84,7 @@ class DATABASE(Dataset):
                     save.append(content)
                     print('')
         '''
-        
+
         # in case dataset is inside machine
         self.database.append(ImageFolder(root=source, transform=ToTensor()))
 
@@ -91,7 +92,7 @@ class DATABASE(Dataset):
 
 
     def augmentate(self, type):
-        
+
         if type == 'rotation':
 
         elif type == 'translation':
