@@ -4,7 +4,8 @@
 - sign up and use the credits (svenja sign up, Matheus setup project)
 
 ## Data part --> fred implement and see if it can be split up and tell us
-- preprocessing the data (take from covnet)  --> done in create_COVIDx_v3.ipynb (Covid Net)
+- preprocessing the data (take from covnet)  --> done in create_COVIDx_v3.ipynb (Covid Net) ( should we d it ourselves or use this:  train_COVIDx2.txt: This file contains the samples used for training COVIDNet-CXR.
+test_COVIDx2.txt: This file contains the samples used for testing COVIDNet-CXR.)
 
 - data loader + augmentation (PyTorch)
 
