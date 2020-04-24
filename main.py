@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     datasets, pictures, labels = preprocessSplit('train_split_v3.txt')
     #print(labels)
-    training_set = Dataset(pictures, labels, 'data/train/1/')
+    training_set = Dataset(pictures, labels, 'data/train/1/', transform=Augmentation())
     train_loaded = DataLoader(training_set, batch_size=args.batch, shuffle=True)
 
     #X = cv2.imread(os.path.join('data/train/1/', 'pneumococcal-pneumonia-day0.jpg'))
@@ -55,7 +55,8 @@ if __name__ == "__main__":
         # training comes here
 
         for batch_idx, (inputs, y_batch) in enumerate(train_loaded):
-            print(inputs.shape)
+            print(inputs)
+            print(y_batch)
 
 
 

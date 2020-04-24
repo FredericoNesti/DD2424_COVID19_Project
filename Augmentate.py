@@ -1,5 +1,3 @@
-
-
 from torchvision import transforms as tf
 from torchvision.datasets import ImageFolder
 import torch
@@ -7,6 +5,7 @@ from torch.utils import data
 import numpy as np
 import os
 import cv2
+from PIL import Image
 
 
 def Augmentation(t=(0,1),b=(0,1),d=0,c=(0,0),s=(0,0),h=(0,0)):
@@ -73,8 +72,10 @@ class Dataset(data.Dataset):
         X = X[int(h / 6):, :]
         X = cv2.resize(X, self.input_shape)
 
-        if self.transform:
-            X = self.transform(X)
+        if self.transform: # see https://stackoverflow.com/questions/43232813/convert-opencv-image-format-to-pil-image-format
+            img = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
+            im_pil = Image.fromarray(img)
+            X = self.transform(im_pil)
 
         y = self.labels[index]
 
