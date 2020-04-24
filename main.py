@@ -44,6 +44,9 @@ if __name__ == "__main__":
         print('Epoch: ', e)
         # training comes here
 
+        for batch_idx, (inputs, y_batch) in enumerate(train_loaded):
+            print(inputs.shape)
+
 
 
     elapsed_time = time.time() - start_time

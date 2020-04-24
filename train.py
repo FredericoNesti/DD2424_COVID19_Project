@@ -20,7 +20,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 # placeholder model#
 
 class Net(nn.Module):
-    def __init__(self, D_in=3, H=1285, D_out=1992): #fix this
+    def __init__(self, D_in=1024, H=100, D_out=3): #fix this
         """
         In the constructor we instantiate two nn.Linear modules and assign them as
         member variables.
@@ -107,9 +107,9 @@ def train_model(model, train_loader, criterion, m, optimizer, scheduler, num_epo
             # load weights
             '''
             saver.restore(sess, os.path.join(args.weightspath, args.ckptname))'''
-            # sample_weight = torch.empty(inputs.shape).uniform_(0, 1) # weights in covid given as argument
+            sample_weight = torch.empty(inputs.shape).uniform_(0, 1) # weights in covid given as argument
             # print(y_batch)
-            sample_weight = np.take(class_weights, y_batch)
+            #sample_weight = np.take(class_weights, y_batch)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -117,6 +117,7 @@ def train_model(model, train_loader, criterion, m, optimizer, scheduler, num_epo
             # forward
             outputs = model(inputs)
             # _, preds = torch.max(outputs, 1)
+            print(m(outputs).shape)
             loss = torch.mean(criterion(m(outputs), y_batch) * sample_weight)  # weights given as argument
             losses.append(loss)
 
