@@ -26,6 +26,16 @@ args = parser.parse_args()
 if __name__ == "__main__":
     start_time = time.time()
 
+    datasets, pictures, labels = preprocessSplit('train_split_v3.txt')
+    #print(labels)
+    training_set = Dataset(pictures, labels, 'data/train/1/')
+    train_loaded = DataLoader(training_set, batch_size=args.batch, shuffle=True)
+
+    #X = cv2.imread(os.path.join('data/train/1/', 'pneumococcal-pneumonia-day0.jpg'))
+    #print(X)
+
+    '''
+
     train_dataset = ImageFolder(root=args.train_folder, transform=Augmentation())
     train_loaded = DataLoader(train_dataset, batch_size=args.batch, shuffle=True)
 
@@ -39,7 +49,7 @@ if __name__ == "__main__":
     # test dataset without augmentation
     test_dataset_N = ImageFolder(root=args.test_folder, transform=ToTensor())
     test_loaded_N = DataLoader(test_dataset_N, batch_size=args.batch, shuffle=True)
-
+'''
     for e in range(1, args.epochs+1):
         print('Epoch: ', e)
         # training comes here
