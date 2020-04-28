@@ -22,12 +22,24 @@ def preprocessSplit(csv_file):
         datasets[l.split()[2]].append(l.split()[1]) # just save the image
         pictures.append(l.split()[1])
         labels.append(l.split()[2])
-    datasets = [
-        datasets['normal'] + datasets['pneumonia'],
-        datasets['COVID-19'],
-    ]
-    print(len(datasets[0]), len(datasets[1]))
+
     return datasets, pictures, labels
+
+# https://discuss.pytorch.org/t/balanced-sampling-between-classes-with-torchvision-dataloader/2703/3
+def make_weights_for_balanced_classes(labels,mapping, nclasses):
+    count = [0] * nclasses
+    for item in labels:
+        count[mapping[item]] += 1
+    weight_per_class = [0.] * nclasses
+    N = float(sum(count))
+    for i in range(nclasses):
+        weight_per_class[i] = N/float(count[i])
+    weight = [0] * len(labels)
+    for idx, val in enumerate(labels):
+        weight[idx] = weight_per_class[mapping[val]]
+    return weight
+
+
 
 
 
@@ -60,7 +72,6 @@ class Dataset(data.Dataset):
 
         if self.transform: # see https://stackoverflow.com/questions/43232813/convert-opencv-image-format-to-pil-image-format
             img = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
-            print(img.shape)
             im_pil = Image.fromarray(img)
 
             imshow(np.asarray(im_pil))
