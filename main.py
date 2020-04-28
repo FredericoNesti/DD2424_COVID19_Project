@@ -27,8 +27,11 @@ args = parser.parse_args()
 if __name__ == "__main__":
     start_time = time.time()
 
+    class_weights = [1., 1., 6.] # move to args
+    mapping = {'normal':0, 'pneumonia' :1, 'COVID-19':2 }
+
     datasets, pictures, labels = preprocessSplit('train_split_v3.txt')
-    training_set = Dataset(pictures, labels, 'data/train/1/', transform=Augmentation())
+    training_set = Dataset(pictures, labels, 'data/train/1/', class_weights, mapping,  transform=Augmentation())
     train_loaded = DataLoader(training_set, batch_size=args.batch, shuffle=True)
 
     '''
@@ -51,9 +54,10 @@ if __name__ == "__main__":
         print('Epoch: ', e)
         # training comes here
 
-        for batch_idx, (inputs, y_batch) in enumerate(train_loaded):
+        for batch_idx, (inputs, y_batch, weights) in enumerate(train_loaded):
             print(inputs.shape)
             print(y_batch)
+            print(weights)
 
 
 

@@ -33,13 +33,15 @@ def preprocessSplit(csv_file):
 
 class Dataset(data.Dataset):
   'Characterizes a dataset for PyTorch'
-  def __init__(self, list_IDs, labels, datadir, transform=None):
+  def __init__(self, list_IDs, labels, datadir, class_weights, mapping, transform=None):
         'Initialization'
         self.labels = labels
         self.list_IDs = list_IDs
         self.datadir = datadir
         self.input_shape = (224, 224)
         self.transform = transform
+        self.class_weights = class_weights
+        self.mapping = mapping
 
   def __len__(self):
         'Denotes the total number of samples'
@@ -49,9 +51,6 @@ class Dataset(data.Dataset):
         'Generates one sample of data'
         # Select sample
         ID = self.list_IDs[index]
-
-        # Load data and get label
-        #X = torch.load('data/' + ID + '.pt')
 
         # data loading taken from covid net
         X = cv2.imread(os.path.join(self.datadir, ID))
@@ -66,7 +65,11 @@ class Dataset(data.Dataset):
 
             imshow(np.asarray(im_pil))
             X = self.transform(im_pil)
+        else:
+            X = X.astype('float32') / 255.0
 
         y = self.labels[index]
 
-        return X, y
+        weights = np.take(self.class_weights, self.mapping[y])
+
+        return X, y, weights
