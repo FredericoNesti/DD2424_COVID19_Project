@@ -12,6 +12,13 @@ from utils_ic import load_data
 from tqdm import tqdm
 
 
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc.
+    print("Running on the GPU")
+else:
+    device = torch.device("cpu")
+    print("Running on the CPU")
+
 def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs=10):
     acc_tr, acc_test, loss_tr = [], [], []
     for epoch in tqdm(range(epochs)):  # loop over the dataset multiple times
@@ -65,7 +72,7 @@ trainloader, testloader, validloader, train_data = load_data('flowers')
 n_images_train = 102
 n_images_test = 50
 
-net = CovidNet(10)
+net = CovidNet(10).to(device)
 verbose = True
 
 criterion = nn.CrossEntropyLoss()
