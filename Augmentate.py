@@ -1,82 +1,22 @@
 from torchvision import transforms as tf
-from torchvision.datasets import ImageFolder
-import torch
-from torch.utils import data
-import numpy as np
-import os
 import cv2
-from PIL import Image
-
+import numpy as np
 
 def Augmentation(t=(0,1),b=(0,1),d=0,c=(0,0),s=(0,0),h=(0,0)):
     transformation = tf.Compose([
-        tf.RandomAffine(degrees=d, translate=t),
-        tf.ColorJitter(brightness=b,contrast=c,saturation=s,hue=h),
-        tf.RandomRotation((-10,10)),
+        tf.RandomAffine(degrees=d, translate=t), # a bit much sometimes
+        #tf.ColorJitter(brightness=b,contrast=c,saturation=s,hue=h), # not useful
+        tf.RandomRotation((-10,10), fill=1), # random 0s
         tf.RandomHorizontalFlip(),
-        tf.ToTensor(),
+        TransformShow(), # visualize transformed pic
+        tf.ToTensor(), # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0] i
     ])
     return transformation
 
-# taken from covid net
-def _process_csv_file(file):
-    with open(file, 'r') as fr:
-        files = fr.readlines()
-    return files
-
-
-def preprocessSplit(csv_file):
-    dataset = _process_csv_file(csv_file)
-
-    datasets = {'normal': [], 'pneumonia': [], 'COVID-19': []}
-    pictures = []
-    labels = []
-    for l in dataset:
-        datasets[l.split()[2]].append(l.split()[1]) # just save the image
-        pictures.append(l.split()[1])
-        labels.append(l.split()[2])
-    datasets = [
-        datasets['normal'] + datasets['pneumonia'],
-        datasets['COVID-19'],
-    ]
-    print(len(datasets[0]), len(datasets[1]))
-    return datasets, pictures, labels
-
-
-
-class Dataset(data.Dataset):
-  'Characterizes a dataset for PyTorch'
-  def __init__(self, list_IDs, labels, datadir, transform=None):
-        'Initialization'
-        self.labels = labels
-        self.list_IDs = list_IDs
-        self.datadir = datadir
-        self.input_shape = (224, 224)
-        self.transform = transform
-
-  def __len__(self):
-        'Denotes the total number of samples'
-        return len(self.list_IDs)
-
-  def __getitem__(self, index):
-        'Generates one sample of data'
-        # Select sample
-        ID = self.list_IDs[index]
-
-        # Load data and get label
-        #X = torch.load('data/' + ID + '.pt')
-
-        # data loading taken from covid net
-        X = cv2.imread(os.path.join(self.datadir, ID))
-        h, w, c = X.shape
-        X = X[int(h / 6):, :]
-        X = cv2.resize(X, self.input_shape)
-
-        if self.transform: # see https://stackoverflow.com/questions/43232813/convert-opencv-image-format-to-pil-image-format
-            img = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
-            im_pil = Image.fromarray(img)
-            X = self.transform(im_pil)
-
-        y = self.labels[index]
-
-        return X, y
+# for visualizing the transformations: taken from https://stackoverflow.com/questions/55179282/display-examples-of-augmented-images-in-pytorch
+def TransformShow(name="img", wait=100):
+    def transform_show(img):
+        cv2.imshow(name, np.array(img))
+        cv2.waitKey(wait)
+        return img
+    return transform_show

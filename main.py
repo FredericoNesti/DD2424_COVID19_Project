@@ -5,6 +5,7 @@ from torchvision.datasets import ImageFolder
 from torchvision.transforms import ToTensor
 
 from Augmentate import *
+from data import *
 
 parser = argparse.ArgumentParser(description='COVID19')
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
         # training comes here
 
         for batch_idx, (inputs, y_batch) in enumerate(train_loaded):
-            print(inputs)
+            print(inputs.shape)
             print(y_batch)
 
 
