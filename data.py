@@ -26,7 +26,7 @@ def preprocessSplit(csv_file):
     return datasets, pictures, labels
 
 # https://discuss.pytorch.org/t/balanced-sampling-between-classes-with-torchvision-dataloader/2703/3
-def make_weights_for_balanced_classes(labels,mapping, nclasses):
+def make_weights_for_balanced_classes(labels,mapping, nclasses, defined_percentage):
     count = [0] * nclasses
     for item in labels:
         count[mapping[item]] += 1
@@ -38,9 +38,6 @@ def make_weights_for_balanced_classes(labels,mapping, nclasses):
     for idx, val in enumerate(labels):
         weight[idx] = weight_per_class[mapping[val]]
     return weight
-
-
-
 
 
 class Dataset(data.Dataset):

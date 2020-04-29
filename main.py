@@ -30,12 +30,11 @@ if __name__ == "__main__":
     start_time = time.time()
 
     class_weights =[1., 1., 6.],# move to args
-    mapping = {'normal':0, 'pneumonia' :1, 'COVID-19':2 }
-    covid_weight = 0.3
+    mapping = {'normal':0, 'pneumonia':1, 'COVID-19':2 }
 
 
     datasets, pictures, labels = preprocessSplit(args.test_txt)
-    weight_list = make_weights_for_balanced_classes(labels,mapping, 3)
+    weight_list = make_weights_for_balanced_classes(labels,mapping, 3, [0.375, 0.375, 0.25])
     training_set = Dataset(pictures, labels, args.train_folder, class_weights, mapping,  transform=Augmentation())
     train_loaded = DataLoader(training_set, batch_size=args.batch,  sampler=WeightedRandomSampler(weight_list, len(weight_list)))
 
