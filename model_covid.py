@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 class PEPX(nn.Module):
     # def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/4, first_exp_fact=2, sec_proj_fac=1/4):
-    def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/8, first_exp_fact=2, sec_proj_fac=1/8):
+    def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/8, first_exp_fact=2, sec_proj_fac=1/16):
         super(PEPX, self).__init__()
         first_proj = int(in_ch * first_proj_fact)
         first_exp = int(first_proj * first_exp_fact)
@@ -53,7 +53,8 @@ class CovidNet(nn.Module):
         layers = []
         for i in range(1,4):
             if i == 1:
-                layers.append(PEPX(64, 256, first_exp_fact=8, sec_proj_fac=1/2, p1=True))
+                # layers.append(PEPX(64, 256, first_exp_fact=8, sec_proj_fac=1/2, p1=True))
+                layers.append(PEPX(64, 256, first_exp_fact=2, sec_proj_fac=1/4, p1=True))
             else:
                 layers.append(PEPX(256 * i, 256, first_exp_fact=4, p1=False))
 
@@ -66,7 +67,7 @@ class CovidNet(nn.Module):
         layers = []
         for i in range(1,5):
             if i == 1:
-                layers.append(PEPX(3*256 + 256, 512, first_exp_fact=8, sec_proj_fac=1/2, p1=True))
+                layers.append(PEPX(3*256 + 256, 512, first_exp_fact=2, sec_proj_fac=1/4, p1=True))
             else:
                 layers.append(PEPX(512 * i, 512, first_exp_fact=4, p1=False))
         self.pepx_2 = nn.ModuleList(layers)
@@ -78,7 +79,7 @@ class CovidNet(nn.Module):
         layers = []
         for i in range(1,7):
             if i == 1:
-                layers.append(PEPX(4*512 + 512, 1024, first_exp_fact=4, sec_proj_fac=1/2, p1=True))
+                layers.append(PEPX(4*512 + 512, 1024, first_exp_fact=2, sec_proj_fac=1/8, p1=True))
             else:
                 layers.append(PEPX(1024 * i, 1024, p1=False))
 
