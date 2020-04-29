@@ -1,6 +1,7 @@
 import time
 import argparse
 from torch.utils.data import DataLoader, WeightedRandomSampler
+import torch
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import ToTensor
 
@@ -31,18 +32,33 @@ if __name__ == "__main__":
 
     class_weights =[1., 1., 6.],# move to args
     mapping = {'normal':0, 'pneumonia':1, 'COVID-19':2 }
+    covid_percent = 0.3
 
-
-    datasets, pictures, labels = preprocessSplit(args.test_txt)
-    weight_list = make_weights_for_balanced_classes(labels,mapping, 3, [0.375, 0.375, 0.25])
+    datasets, pictures, labels, labels_non, labels_cov = preprocessSplit(args.test_txt)
+    #weight_list = make_weights_for_balanced_classes(labels,mapping, 3, [0.375, 0.375, 0.25])
     training_set = Dataset(pictures, labels, args.train_folder, class_weights, mapping,  transform=Augmentation())
-    train_loaded = DataLoader(training_set, batch_size=args.batch,  sampler=WeightedRandomSampler(weight_list, len(weight_list)))
+    #train_loaded = DataLoader(training_set, batch_size=args.batch,  sampler=WeightedRandomSampler(weight_list, len(weight_list)))
+
+    train_non_covid = Dataset(datasets[0], labels_non, args.train_folder, class_weights, mapping,  transform=Augmentation())
+    train_covid = Dataset(datasets[1], labels_cov , args.train_folder, class_weights, mapping, transform=Augmentation())
+    covid_size = max(int(args.batch * covid_percent), 1)
+
+    dl_non_covid = DataLoader(train_non_covid, batch_size=(args.batch-covid_size), shuffle=True)
+    dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True)
+
 
 
     for e in range(1, args.epochs+1):
         print('Epoch: ', e)
         # training comes here
-        for batch_idx, (inputs, y_batch, weights) in enumerate(train_loaded):
+        for batch_idx, (inputs_nc, y_batch_nc, weights_nc) in enumerate(dl_non_covid):
+            inputs_c, y_batch_c, weights_c = next(iter(dl_covid))
+
+            inputs = torch.cat((inputs_nc, inputs_c))
+            y_batch = y_batch_nc + y_batch_c
+            weights = torch.cat((weights_nc, weights_c))
+
+            print(inputs.shape)
             print(y_batch)
             print(weights)
 

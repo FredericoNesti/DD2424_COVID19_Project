@@ -23,7 +23,15 @@ def preprocessSplit(csv_file):
         pictures.append(l.split()[1])
         labels.append(l.split()[2])
 
-    return datasets, pictures, labels
+    labels_non = ['normal'] * len(datasets['normal']) + ['pneumonia'] * len(datasets['pneumonia'])
+    labels_cov = ['COVID-19'] * len(datasets['COVID-19'])
+    datasets = [
+        datasets['normal'] + datasets['pneumonia'],
+        datasets['COVID-19'],
+    ]
+
+
+    return datasets, pictures, labels, labels_non, labels_cov
 
 # https://discuss.pytorch.org/t/balanced-sampling-between-classes-with-torchvision-dataloader/2703/3
 def make_weights_for_balanced_classes(labels,mapping, nclasses, defined_percentage):
