@@ -28,17 +28,17 @@ def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs
         test_acc_sum = 0.0
 
         if epoch == 0:
-            for x_test, y_test in testloader:
-                x_test, y_test = x_test, y_test
+            for i, (x_test, y_test) in enumerate(testloader):
+                print(i)
+                x_test, y_test = x_test.to(device), y_test.to(device)
                 y_hat_test = model(x_test.to(device))
                 test_acc_sum += (y_hat_test.argmax(dim=1) == y_test).sum().item()
-
 
             acc_tr.append(train_acc_sum / n_images_train)
             acc_test.append(test_acc_sum / n_images_test)
 
         for i, (x_batch, y_batch) in tqdm(enumerate(trainloader)):
-            x_batch, y_batch = x_batch, y_batch
+            x_batch, y_batch = x_batch.to(device), y_batch.to(device)
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -55,7 +55,7 @@ def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs
         test_acc_sum = 0.0
         # print statistics
         for x_test, y_test in testloader:
-            x_test, y_test = x_test, y_test
+            x_test, y_test = x_test.to(device), y_test.to(device)
             y_hat_test = model(x_test)
             test_acc_sum += (y_hat_test.argmax(dim=1) == y_test).sum().item()
 
@@ -72,8 +72,6 @@ def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs
 
 # normalization
 trainloader, testloader, validloader, train_data = load_data('flowers')
-
-trainloader, testloader, validloader, train_data = trainloader.to(device), testloader.to(device), validloader.to(device), train_data.to(device)
 
 n_images_train = 102
 n_images_test = 50
