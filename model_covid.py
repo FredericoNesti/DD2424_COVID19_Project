@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class PEPX(nn.Module):
-    def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/4, first_exp_fact=2, sec_proj_fac=1/4):
+    # def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/4, first_exp_fact=2, sec_proj_fac=1/4):
+    def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/8, first_exp_fact=2, sec_proj_fac=1/8):
         super(PEPX, self).__init__()
         first_proj = int(in_ch * first_proj_fact)
         first_exp = int(first_proj * first_exp_fact)
