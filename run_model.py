@@ -27,16 +27,15 @@ def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs
         train_acc_sum = 0.0
         test_acc_sum = 0.0
 
-        if epoch == 0:
-            for i, (x_test, y_test) in enumerate(testloader):
-                print(i)
-                x_test, y_test = x_test.to(device), y_test.to(device)
-                y_hat_test = model(x_test)
-                test_acc_sum += (y_hat_test.argmax(dim=1) == y_test).sum().item()
-                torch.cuda.empty_cache()
-
-            acc_tr.append(train_acc_sum / n_images_train)
-            acc_test.append(test_acc_sum / n_images_test)
+        # if epoch == 0:
+        #     for i, (x_test, y_test) in enumerate(testloader):
+        #         x_test, y_test = x_test.to(device), y_test.to(device)
+        #         y_hat_test = model(x_test)
+        #         test_acc_sum += (y_hat_test.argmax(dim=1) == y_test).sum().item()
+        #         torch.cuda.empty_cache()
+        #
+        #     acc_tr.append(train_acc_sum / n_images_train)
+        #     acc_test.append(test_acc_sum / n_images_test)
 
         for i, (x_batch, y_batch) in tqdm(enumerate(trainloader)):
             x_batch, y_batch = x_batch.to(device), y_batch.to(device)
