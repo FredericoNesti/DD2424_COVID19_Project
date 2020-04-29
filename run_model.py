@@ -33,6 +33,7 @@ def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs
                 x_test, y_test = x_test.to(device), y_test.to(device)
                 y_hat_test = model(x_test)
                 test_acc_sum += (y_hat_test.argmax(dim=1) == y_test).sum().item()
+                torch.cuda.empty_cache()
 
             acc_tr.append(train_acc_sum / n_images_train)
             acc_test.append(test_acc_sum / n_images_test)
