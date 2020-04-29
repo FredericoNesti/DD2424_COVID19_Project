@@ -86,4 +86,4 @@ scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=10e-5, max_lr=0
 
 print(torch.cuda.get_device_properties(device).total_memory)
 
-# acc_tr_bn, acc_test_bn, loss_tr_bn = train_my_model(net, criterion, optimizer, scheduler, verbose)
+acc_tr_bn, acc_test_bn, loss_tr_bn = train_my_model(net, criterion, optimizer, scheduler, verbose)
