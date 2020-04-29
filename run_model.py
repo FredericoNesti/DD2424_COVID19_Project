@@ -76,7 +76,7 @@ trainloader, testloader, validloader, train_data = load_data('flowers')
 n_images_train = 6755
 n_images_test = 1022
 
-net = CovidNet(10).to(device)
+net = CovidNet(102).to(device)
 verbose = True
 
 criterion = nn.CrossEntropyLoss()
