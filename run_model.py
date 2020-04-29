@@ -29,7 +29,7 @@ def train_my_model(model, criterion, optimizer, scheduler, verbose=False, epochs
 
         if epoch == 0:
             for x_test, y_test in testloader:
-                x_test, y_test = x_test, y_test.
+                x_test, y_test = x_test, y_test
                 y_hat_test = model(x_test.to(device))
                 test_acc_sum += (y_hat_test.argmax(dim=1) == y_test).sum().item()
 
