@@ -68,7 +68,6 @@ if __name__ == "__main__":
             print(weights)
             if batch_idx == 99: # stop condition
                 break
-
     else:
         for batch_idx, (x_batch, y_batch, weights) in enumerate(dl_test):
 
