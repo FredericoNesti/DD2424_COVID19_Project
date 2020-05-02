@@ -4,6 +4,7 @@ import os
 import cv2
 from PIL import Image
 from matplotlib.pyplot import imshow
+import torch
 
 # taken from covid net
 def _process_csv_file(file):
@@ -50,12 +51,12 @@ def make_weights_for_balanced_classes(labels,mapping, nclasses, defined_percenta
 
 class Dataset(data.Dataset):
   'Characterizes a dataset for PyTorch'
-  def __init__(self, list_IDs, labels, datadir, class_weights, mapping, transform=None):
+  def __init__(self, list_IDs, labels, datadir, transform=None, mapping={'normal':0, 'pneumonia':1, 'COVID-19':2 }, class_weights =[1., 1., 6.],  dimension = (224, 224) ):
         'Initialization'
         self.labels = labels
         self.list_IDs = list_IDs
         self.datadir = datadir
-        self.input_shape = (224, 224)
+        self.input_shape = dimension
         self.transform = transform
         self.class_weights = class_weights
         self.mapping = mapping
@@ -87,5 +88,6 @@ class Dataset(data.Dataset):
         y = self.labels[index]
 
         weights = np.take(self.class_weights, self.mapping[y])
+        y = torch.tensor(self.mapping[y], dtype=torch.long)
 
         return X, y, weights
