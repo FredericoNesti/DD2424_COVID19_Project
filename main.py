@@ -51,7 +51,7 @@ if __name__ == "__main__":
         # create Datasets
         test_dataset = Dataset(data_test, labels_test, args.test_folder, transform=None)
         # create data loader
-        dl_test = DataLoader(test_dataset, batch_size=args.batch, shuffle=False, num_workers=1)
+        dl_test = DataLoader(test_dataset, batch_size=args.batch, shuffle=True, num_workers=1)
 
 
 
