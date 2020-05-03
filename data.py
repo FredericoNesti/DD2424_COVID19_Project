@@ -85,6 +85,7 @@ class Dataset(data.Dataset):
             X = self.transform(im_pil)
         else:
             X = X.astype('float32') / 255.0
+            X = torch.from_numpy(X)
 
         y = self.labels[index]
 
