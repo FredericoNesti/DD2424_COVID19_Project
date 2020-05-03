@@ -3,7 +3,7 @@ import numpy as np
 import os
 import cv2
 from PIL import Image
-from matplotlib.pyplot import imshow
+from matplotlib import pyplot as plt
 import torch
 
 # taken from covid net
@@ -80,7 +80,8 @@ class Dataset(data.Dataset):
             img = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
             im_pil = Image.fromarray(img)
 
-            imshow(np.asarray(im_pil))
+            #plt.imshow(np.asarray(im_pil))
+            #plt.show()
             X = self.transform(im_pil)
         else:
             X = X.astype('float32') / 255.0

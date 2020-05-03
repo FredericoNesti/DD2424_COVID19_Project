@@ -42,14 +42,14 @@ if __name__ == "__main__":
         train_covid = Dataset(datasets[1], labels_cov , args.train_folder, transform=Augmentation())
         covid_size = max(int(args.batch * args.covid_percent), 1)
         # create data loader
-        dl_non_covid = DataLoader(train_non_covid, batch_size=(args.batch-covid_size), shuffle=True, num_workers= 2)
-        dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True, num_workers= 2)
+        dl_non_covid = DataLoader(train_non_covid, batch_size=(args.batch-covid_size), shuffle=True) # num_workers= 2
+        dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True) # num_workers= 2
     else:
         # preprocess the given txt files: Test
         ''' Should we also balance the testing?'''
         _, data_test, labels_test, _, _ = preprocessSplit(args.test_txt)
         # create Datasets
-        test_dataset = Dataset(data_test, labels_test, args.test_folder)
+        test_dataset = Dataset(data_test, labels_test, args.test_folder, transform=None)
         # create data loader
         dl_test = DataLoader(test_dataset, batch_size=args.batch, shuffle=False, num_workers=1)
 
