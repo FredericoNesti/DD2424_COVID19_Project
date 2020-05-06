@@ -4,6 +4,9 @@
 - sign up and use the credits (svenja sign up, Matheus setup project)
 
 ## Data part --> fred implement and see if it can be split up and tell us
+
+idea: https://stanford.edu/~shervine/blog/pytorch-how-to-generate-data-parallel
+
 - preprocessing the data (take from covnet)  --> done in create_COVIDx_v3.ipynb (Covid Net) ( should we d it ourselves or use this:  train_COVIDx2.txt: This file contains the samples used for training COVIDNet-CXR.
 test_COVIDx2.txt: This file contains the samples used for testing COVIDNet-CXR.)
 
@@ -59,6 +62,14 @@ of epochs=22, batch size=8, factor=0.7, patience=5
 --> done in eval.py (Covid Net)
 
 
-## Improvenments / Changes to try out
-- loss function 
-- augmentation techniques
+## Improvements / Changes to try out
+- Try different loss structures --> importance sampler loss
+- augmentation techniques --> 
+- use data generation techniques --> VAE
+- learn the latent space --> VAE
+- can we treat lack of data as missing data? 
+- EM and Variational approaches are possible? 
+
+
+
+
