@@ -30,8 +30,6 @@ def preprocessSplit(csv_file):
         datasets['normal'] + datasets['pneumonia'],
         datasets['COVID-19'],
     ]
-
-
     return datasets, pictures, labels, labels_non, labels_cov
 
 # https://discuss.pytorch.org/t/balanced-sampling-between-classes-with-torchvision-dataloader/2703/3

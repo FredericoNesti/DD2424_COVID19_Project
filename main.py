@@ -78,9 +78,6 @@ if __name__ == "__main__":
             if batch_idx == 99: # stop condition
                 break
 
-
-
-
     elapsed_time = time.time() - start_time
     time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
 
