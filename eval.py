@@ -68,6 +68,7 @@ def create_metrics(y_test, pred):
 
     print("Accuracy",accuracy_score(y_test, pred))
 
+    # From COVIDNET
     class_acc = [matrix[i, i] / np.sum(matrix[i, :]) if np.sum(matrix[i, :]) else 0 for i in range(len(matrix))]
     print('Sens Pneumonia: {0:.3f}, Normal: {1:.3f}, COVID-19: {2:.3f}'.format(class_acc[0],
                                                                                class_acc[1],
