@@ -1,10 +1,9 @@
 import time
 import argparse
-from torch.utils.data import DataLoader
-from torchvision.datasets import ImageFolder
-from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 from Augmentate import *
+from data import *
 
 parser = argparse.ArgumentParser(description='COVID19')
 
@@ -12,11 +11,14 @@ parser = argparse.ArgumentParser(description='COVID19')
 parser.add_argument('--device', type=str, default='cuda', metavar='N', help='')
 parser.add_argument('--batch', type=int, default='', metavar='N', help='')
 parser.add_argument('--epochs', type=int, default=1, metavar='N',help='')
+parser.add_argument('--mode', type=str, default='train', metavar='N',help='')
+parser.add_argument('--covid_percent', type=float, default=0.3, metavar='N',help='')
 
 # data sources
 parser.add_argument('--train_folder', type=str, default='', metavar='N',help='')
-parser.add_argument('--validation_folder', type=str, default='', metavar='N',help='')
 parser.add_argument('--test_folder', type=str, default='', metavar='N',help='')
+parser.add_argument('--test_txt', type=str, default='train_split_v3.txt', metavar='N',help='')
+parser.add_argument('--text_txt', type=str, default='test_split_v3.txt', metavar='N',help='')
 
 # results params
 parser.add_argument('--results_directory', type=str, default='', metavar='N',help='')
@@ -26,26 +28,56 @@ args = parser.parse_args()
 if __name__ == "__main__":
     start_time = time.time()
 
-    train_dataset = ImageFolder(root=args.train_folder, transform=Augmentation())
-    train_loaded = DataLoader(train_dataset, batch_size=args.batch, shuffle=True)
+    ''' removed for first approach
+    weight_list = make_weights_for_balanced_classes(labels,mapping, 3, [0.375, 0.375, 0.25])
+    train_loaded = DataLoader(training_set, batch_size=args.batch,  sampler=WeightedRandomSampler(weight_list, len(weight_list)))
+    training_set = Dataset(pictures, labels, args.train_folder, class_weights,  transform=Augmentation())
+    '''
 
-    val_dataset = ImageFolder(root=args.validation_folder, transform=Augmentation())
-    val_loaded = DataLoader(val_dataset, batch_size=args.batch, shuffle=True)
+    if args.mode == 'train':
+        # preprocess the given txt files: Train
+        datasets, _, _, labels_non, labels_cov = preprocessSplit(args.test_txt)
+        # create Datasets
+        train_non_covid = Dataset(datasets[0], labels_non, args.train_folder,  transform=Augmentation())
+        train_covid = Dataset(datasets[1], labels_cov , args.train_folder, transform=Augmentation())
+        covid_size = max(int(args.batch * args.covid_percent), 1)
+        # create data loader
+        dl_non_covid = DataLoader(train_non_covid, batch_size=(args.batch-covid_size), shuffle=True) # num_workers= 2
+        dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True) # num_workers= 2
+    else:
+        # preprocess the given txt files: Test
+        ''' Should we also balance the testing?'''
+        _, data_test, labels_test, _, _ = preprocessSplit(args.test_txt)
+        # create Datasets
+        test_dataset = Dataset(data_test, labels_test, args.test_folder, transform=None)
+        # create data loader
+        dl_test = DataLoader(test_dataset, batch_size=args.batch, shuffle=True, num_workers=1)
 
-    # test dataset with augmentation
-    test_dataset_A = ImageFolder(root=args.test_folder, transform=Augmentation())
-    test_loaded_A = DataLoader(test_dataset_A, batch_size=args.batch, shuffle=True)
 
-    # test dataset without augmentation
-    test_dataset_N = ImageFolder(root=args.test_folder, transform=ToTensor())
-    test_loaded_N = DataLoader(test_dataset_N, batch_size=args.batch, shuffle=True)
 
-    for e in range(1, args.epochs+1):
-        print('Epoch: ', e)
-        # training comes here
+    if args.mode == 'train':
+        for batch_idx, (x_batch_nc, y_batch_nc, weights_nc) in enumerate(dl_non_covid):
+            x_batch_c, y_batch_c, weights_c = next(iter(dl_covid))
 
-        for batch_idx, (inputs, y_batch) in enumerate(train_loaded):
-            print(inputs.shape)
+            x_batch = torch.cat((x_batch_nc, x_batch_c))
+            y_batch = torch.cat((y_batch_nc , y_batch_c))
+            weights = torch.cat((weights_nc, weights_c))
+
+            print(x_batch.shape)
+            print(y_batch)
+            print(weights)
+            if batch_idx == 99: # stop condition
+                break
+    else:
+        for batch_idx, (x_batch, y_batch, weights) in enumerate(dl_test):
+
+            print(x_batch.shape)
+            print(y_batch)
+            print(weights)
+
+            if batch_idx == 99: # stop condition
+                break
+
 
 
 

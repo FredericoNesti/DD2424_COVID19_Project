@@ -62,6 +62,14 @@ of epochs=22, batch size=8, factor=0.7, patience=5
 --> done in eval.py (Covid Net)
 
 
-## Improvenments / Changes to try out
-- loss function 
-- augmentation techniques
+## Improvements / Changes to try out
+- Try different loss structures --> importance sampler loss
+- augmentation techniques --> 
+- use data generation techniques --> VAE
+- learn the latent space --> VAE
+- can we treat lack of data as missing data? 
+- EM and Variational approaches are possible? 
+
+
+
+
