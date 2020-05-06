@@ -2,162 +2,128 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
 
 class PEPX(nn.Module):
-    # def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/4, first_exp_fact=2, sec_proj_fac=1/4):
-    def __init__(self, in_ch, out_ch, p1, first_proj_fact=1/8, first_exp_fact=2, sec_proj_fac=1/16):
+    def __init__(self, n_input, n_out):
         super(PEPX, self).__init__()
-        first_proj = int(in_ch * first_proj_fact)
-        first_exp = int(first_proj * first_exp_fact)
-        sec_proj = int(first_exp * sec_proj_fac)
 
-        self.con1 = nn.Conv2d(in_channels=in_ch, out_channels=first_proj, kernel_size=1,
-                              stride=1, padding=0, bias=True)
-        self.con2 = nn.Conv2d(in_channels=first_proj, out_channels=first_exp, kernel_size=1,
-                              stride=1, padding=0, bias=True)
-        self.dwcConv = nn.Conv2d(in_channels=first_exp, out_channels=first_exp, kernel_size=3,
-                                 stride=1, padding=1, bias=True)
-        self.con3 = nn.Conv2d(in_channels=first_exp, out_channels=sec_proj, kernel_size=1,
-                              stride=1, padding=0, bias=True)
-
-        if p1:
-            self.con4 = nn.Conv2d(in_channels=sec_proj, out_channels=out_ch, kernel_size=1,
-                                  stride=2, padding=0, bias=True)
-        else:
-            self.con4 = nn.Conv2d(in_channels=sec_proj, out_channels=out_ch, kernel_size=1,
-                                  stride=1, padding=0, bias=True)
+        self.network = nn.Sequential(nn.Conv2d(in_channels=n_input, out_channels=n_input // 2, kernel_size=1),
+                                     nn.Conv2d(in_channels=n_input // 2, out_channels=int(3 * n_input / 4),
+                                               kernel_size=1),
+                                     nn.Conv2d(in_channels=int(3 * n_input / 4), out_channels=int(3 * n_input / 4),
+                                               kernel_size=3, groups=int(3 * n_input / 4), padding=1),
+                                     nn.Conv2d(in_channels=int(3 * n_input / 4), out_channels=n_input // 2,
+                                               kernel_size=1),
+                                     nn.Conv2d(in_channels=n_input // 2, out_channels=n_out, kernel_size=1))
 
     def forward(self, mapping_filters):
-        out = self.con1(mapping_filters)
-        out = self.con2(out)
-        out = self.dwcConv(out)
-        out = self.con3(out)
-        out = self.con4(out)
-
-        return out
+        return self.network(mapping_filters)
 
 
 class CovidNet(nn.Module):
     # Inputs an image and ouputs the prediction for the class
 
-    def __init__(self, num_class):
+    def __init__(self, n_classes):
         super(CovidNet, self).__init__()
+        filters = {
+            'pexp1_1': [64, 256],
+            'pexp1_2': [256, 256],
+            'pexp1_3': [256, 256],
+            'pexp2_1': [256, 512],
+            'pexp2_2': [512, 512],
+            'pexp2_3': [512, 512],
+            'pexp2_4': [512, 512],
+            'pexp3_1': [512, 1024],
+            'pexp3_2': [1024, 1024],
+            'pexp3_3': [1024, 1024],
+            'pexp3_4': [1024, 1024],
+            'pexp3_5': [1024, 1024],
+            'pexp3_6': [1024, 1024],
+            'pexp4_1': [1024, 2048],
+            'pexp4_2': [2048, 2048],
+            'pexp4_3': [2048, 2048],
+        }
 
         # CONV 7X7
-        self.conv7 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.add_module('conv1_7x7', nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3))
 
-        # CONV 1X1 (56x56x256)
-        self.conv_top1 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=1, stride=2, padding=0, bias=False)
+        # add all PEPEX
+        for name, sizes in filters.items():
+            self.add_module(name, PEPX(sizes[0], sizes[1]))
 
-        # PEPX 1
-        layers = []
-        for i in range(1,4):
-            if i == 1:
-                # layers.append(PEPX(64, 256, first_exp_fact=8, sec_proj_fac=1/2, p1=True))
-                layers.append(PEPX(64, 256, first_exp_fact=2, sec_proj_fac=1/4, p1=True))
-            else:
-                layers.append(PEPX(256 * i, 256, first_exp_fact=4, p1=False))
+        # conv 1x1 top layers
+        self.add_module('conv1_1x1', nn.Conv2d(in_channels=64, out_channels=256, kernel_size=1))
+        self.add_module('conv2_1x1', nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1))
+        self.add_module('conv3_1x1', nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=1))
+        self.add_module('conv4_1x1', nn.Conv2d(in_channels=1024, out_channels=2048, kernel_size=1))
 
-        self.pepx_1 = nn.ModuleList(layers)
+        # Final block
+        self.add_module('flatten', Flatten())
+        self.add_module('fc1', nn.Linear(7 * 7 * 2048, 1024))
 
-        # CONV 1X1 (28x28x512)
-        self.conv_top2 = nn.Conv2d(in_channels=256 + 3*256, out_channels=512, kernel_size=1, stride=2, padding=0, bias=False)
-
-        # PEPX 2
-        layers = []
-        for i in range(1,5):
-            if i == 1:
-                layers.append(PEPX(3*256 + 256, 512, first_exp_fact=2, sec_proj_fac=1/4, p1=True))
-            else:
-                layers.append(PEPX(512 * i, 512, first_exp_fact=4, p1=False))
-        self.pepx_2 = nn.ModuleList(layers)
-
-        # CONV 1X1 (14x14x1024)
-        self.conv_top3 = nn.Conv2d(in_channels=512 + 4*512, out_channels=1024, kernel_size=1, stride=2, padding=0, bias=False)
-# 9899
-        # PEPEX 3
-        layers = []
-        for i in range(1,7):
-            if i == 1:
-                layers.append(PEPX(4*512 + 512, 1024, first_exp_fact=2, sec_proj_fac=1/8, p1=True))
-            else:
-                layers.append(PEPX(1024 * i, 1024, p1=False))
-
-        self.pepx_3 = nn.ModuleList(layers)
-
-        # CONV 1X1 (7x7x2048)
-        self.conv_top4 = nn.Conv2d(in_channels=1024 + 6*1024, out_channels=2048, kernel_size=1, stride=2, padding=0, bias=False)
-
-        # PEPEX 4
-        layers = []
-        for i in range(1,4):
-            if i == 1:
-                layers.append(PEPX(6*1024 + 1024, 2048, sec_proj_fac=1/2, p1=True))
-            else:
-                layers.append(PEPX(2048 * i, 2048, p1=False))
-
-        self.pepx_4 = nn.ModuleList(layers)
-
-        # FC
-        self.fc1 = nn.Sequential(nn.Linear(4*100352, 1024))
-        self.fc2 = nn.Sequential(nn.Linear(1024, num_class))
+        self.add_module('fc2', nn.Linear(1024, 256))
+        self.add_module('classifier', nn.Linear(256, n_classes))
 
 
     def forward(self, img):
         # CHUNK 0
-        out_conv7 = self.conv7(img)
+        out_conv7 = F.max_pool2d(F.relu(self.conv1_7x7(img)), 2)
 
         # CHUNK 1
-        top_1 = self.conv_top1(out_conv7)
-        out_pepx1 = top_1
-        for i, func in enumerate(self.pepx_1):
-            if i == 0:
-                out = func(out_conv7)
-            else:
-                out = func(out_pepx1)
+        out_conv1_1x1 = self.conv1_1x1(out_conv7)
 
-            out_pepx1 = torch.cat((out_pepx1, out), 1)
+        pepx11 = self.pexp1_1(out_conv7)
+        pepx12 = self.pexp1_2(pepx11 + out_conv1_1x1)
+        pepx13 = self.pexp1_3(pepx12 + pepx11 + out_conv1_1x1)
 
         # CHUNK 2
-        top_2 = self.conv_top2(out_pepx1)
-        out_pepx2 = top_2
-        for i, func in enumerate(self.pepx_2):
-            if i == 0:
-                out = func(out_pepx1)
-            else:
-                out = func(out_pepx2)
-            out_pepx2 = torch.cat((out_pepx2, out), 1)
+        out_conv2_1x1 = F.max_pool2d(self.conv2_1x1(pepx12 + pepx11 + pepx13 + out_conv1_1x1), 2)
+
+        pepx21 = self.pexp2_1(
+            F.max_pool2d(pepx13, 2) + F.max_pool2d(pepx11, 2) + F.max_pool2d(pepx12, 2) + F.max_pool2d(out_conv1_1x1,
+                                                                                                       2))
+        pepx22 = self.pexp2_2(pepx21 + out_conv2_1x1)
+        pepx23 = self.pexp2_3(pepx22 + pepx21 + out_conv2_1x1)
+        pepx24 = self.pexp2_4(pepx23 + pepx21 + pepx22 + out_conv2_1x1)
 
         # CHUNK 3
-        top_3 = self.conv_top3(out_pepx2)
-        out_pepx3 = top_3
-        for i, func in enumerate(self.pepx_3):
-            if i == 0:
-                out = func(out_pepx2)
-            else:
-                out = func(out_pepx3)
-            out_pepx3 = torch.cat((out_pepx3, out), 1)
+        out_conv3_1x1 = F.max_pool2d(self.conv3_1x1(pepx22 + pepx21 + pepx23 + pepx24 + out_conv2_1x1), 2)
+
+        pepx31 = self.pexp3_1(
+            F.max_pool2d(pepx24, 2) + F.max_pool2d(pepx21, 2) + F.max_pool2d(pepx22, 2) + F.max_pool2d(pepx23,
+                                                                                                       2) + F.max_pool2d(
+                out_conv2_1x1, 2))
+        pepx32 = self.pexp3_2(pepx31 + out_conv3_1x1)
+        pepx33 = self.pexp3_3(pepx31 + pepx32 + out_conv3_1x1)
+        pepx34 = self.pexp3_4(pepx31 + pepx32 + pepx33 + out_conv3_1x1)
+        pepx35 = self.pexp3_5(pepx31 + pepx32 + pepx33 + pepx34 + out_conv3_1x1)
+        pepx36 = self.pexp3_6(pepx31 + pepx32 + pepx33 + pepx34 + pepx35 + out_conv3_1x1)
 
         # CHUNK 4
-        top_4 = self.conv_top4(out_pepx3)
-        out_pepx4 = top_4
-        for i, func in enumerate(self.pepx_4):
-            if i == 0:
-                out = func(out_pepx3)
-            else:
-                out = func(out_pepx4)
-            out_pepx4 = torch.cat((out_pepx4, out), 1)
+        out_conv4_1x1 = F.max_pool2d(
+            self.conv4_1x1(pepx31 + pepx32 + pepx33 + pepx34 + pepx35 + pepx36 + out_conv3_1x1), 2)
 
-        # Final chunk
-        flatten = torch.flatten(out_pepx4, start_dim=1)
+        pepx41 = self.pexp4_1(
+            F.max_pool2d(pepx31, 2) + F.max_pool2d(pepx32, 2) + F.max_pool2d(pepx32, 2) + F.max_pool2d(pepx34,
+                                                                                                       2) + F.max_pool2d(
+                pepx35, 2) + F.max_pool2d(pepx36, 2) + F.max_pool2d(out_conv3_1x1, 2))
+        pepx42 = self.pexp4_2(pepx41 + out_conv4_1x1)
+        pepx43 = self.pexp4_3(pepx41 + pepx42 + out_conv4_1x1)
 
-        out = F.relu(self.fc1(flatten))
-        out = F.relu(self.fc2(out))
+        # FINAL CHUNK
+        flattened = self.flatten(pepx41 + pepx42 + pepx43 + out_conv4_1x1)
 
-        probs = torch.softmax(out, dim=1)
+        fc1out = F.relu(self.fc1(flattened))
+        fc2out = F.relu(self.fc2(fc1out))
+        logits = self.classifier(fc2out)
+
+        # probs = torch.softmax(logits, dim=1)
         # winners = probs.argmax(dim=1)
 
-        return probs
+        return logits
 
     def get_n_params(self):
         """

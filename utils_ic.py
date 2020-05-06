@@ -10,7 +10,7 @@ def read_jason(filename):
     return cat_to_name
 
 # Define function to read data
-def load_data(data_dir):
+def load_data(data_dir, batch_size=8):
     train_dir = data_dir + '/train'
     valid_dir = data_dir + '/valid'
     test_dir = data_dir + '/test'
@@ -36,9 +36,9 @@ def load_data(data_dir):
     valid_data = datasets.ImageFolder(valid_dir, transform=test_valid_transforms)
 
     # Using the image datasets and the trainforms, define the dataloaders
-    trainloader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=True)
-    testloader = torch.utils.data.DataLoader(test_data, batch_size=1)
-    validloader = torch.utils.data.DataLoader(valid_data, batch_size=1)
+    trainloader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)
+    validloader = torch.utils.data.DataLoader(valid_data, batch_size=batch_size)
     
     return trainloader, testloader, validloader, train_data
 
