@@ -1,6 +1,7 @@
 import time
 import argparse
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader
+
 
 from Augmentate import *
 from data import *

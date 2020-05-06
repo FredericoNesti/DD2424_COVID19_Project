@@ -4,7 +4,7 @@ import numpy as np
 from data import *
 from torch.utils.data import DataLoader
 from model_covid import CovidNet
-from barbar import Bar
+from sklearn.metrics import accuracy_score
 
 
 ############### added for debugging
@@ -65,6 +65,8 @@ def create_metrics(y_test, pred):
     matrix = matrix.astype('float')
     # cm_norm = matrix / matrix.sum(axis=1)[:, np.newaxis]
     print(matrix)
+
+    print("Accuracy",accuracy_score(y_test, pred))
 
     class_acc = [matrix[i, i] / np.sum(matrix[i, :]) if np.sum(matrix[i, :]) else 0 for i in range(len(matrix))]
     print('Sens Pneumonia: {0:.3f}, Normal: {1:.3f}, COVID-19: {2:.3f}'.format(class_acc[0],
