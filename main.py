@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 
 from Augmentate import *
 from data import *
+from eval import *
 
 parser = argparse.ArgumentParser(description='COVID19')
 
@@ -11,7 +12,7 @@ parser = argparse.ArgumentParser(description='COVID19')
 parser.add_argument('--device', type=str, default='cuda', metavar='N', help='')
 parser.add_argument('--batch', type=int, default='', metavar='N', help='')
 parser.add_argument('--epochs', type=int, default=1, metavar='N',help='')
-parser.add_argument('--mode', type=str, default='train', metavar='N',help='')
+parser.add_argument('--mode', type=str, default='test', metavar='N',help='')
 parser.add_argument('--covid_percent', type=float, default=0.3, metavar='N',help='')
 
 # data sources
@@ -44,16 +45,6 @@ if __name__ == "__main__":
         # create data loader
         dl_non_covid = DataLoader(train_non_covid, batch_size=(args.batch-covid_size), shuffle=True) # num_workers= 2
         dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True) # num_workers= 2
-    else:
-        # preprocess the given txt files: Test
-        ''' Should we also balance the testing?'''
-        _, data_test, labels_test, _, _ = preprocessSplit(args.test_txt)
-        # create Datasets
-        test_dataset = Dataset(data_test, labels_test, args.test_folder, transform=None)
-        # create data loader
-        dl_test = DataLoader(test_dataset, batch_size=args.batch, shuffle=True, num_workers=1)
-
-
 
     if args.mode == 'train':
         for batch_idx, (x_batch_nc, y_batch_nc, weights_nc) in enumerate(dl_non_covid):
@@ -69,14 +60,11 @@ if __name__ == "__main__":
             if batch_idx == 99: # stop condition
                 break
     else:
-        for batch_idx, (x_batch, y_batch, weights) in enumerate(dl_test):
 
-            print(x_batch.shape)
-            print(y_batch)
-            print(weights)
-
-            if batch_idx == 99: # stop condition
-                break
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        path = '' # to load pretrained model
+        y_test, pred= test(args.test_txt, args.test_folder, 1, device, path)
+        create_metrics(y_test, pred)
 
     elapsed_time = time.time() - start_time
     time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
