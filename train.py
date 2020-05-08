@@ -106,8 +106,8 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
                loss=losses, accuracy=accuracies))
 
         # Debug
-        if batch_idx == 10:
-            break
+        # if batch_idx == 10:
+        #     break
 
     # Plot loss
     # plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
