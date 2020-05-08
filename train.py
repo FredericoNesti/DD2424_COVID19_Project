@@ -1,239 +1,236 @@
 # imports
+import os, argparse, pathlib
+import numpy as np
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import argparse
+
+from sklearn.metrics import accuracy_score
 from torchvision.datasets import ImageFolder
-from barbar import Bar
 from torch.utils.data import DataLoader
-import numpy as np
-import os, argparse, pathlib
-from Augmentate import *
-# from eval import eval
-# from data import BalanceCovidDataset
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-#######################
-# model definition - example - todo matheus
-# placeholder model#
-
-class Net(nn.Module):
-    def __init__(self, D_in=1024, H=100, D_out=3): #fix this
-        """
-        In the constructor we instantiate two nn.Linear modules and assign them as
-        member variables.
-
-        D_in: input dimension
-        H: dimension of hidden layer
-        D_out: output dimension
-        """
-        super(Net, self).__init__()
-        self.linear1 = nn.Linear(D_in, H)
-        self.linear2 = nn.Linear(H, D_out)
-
-    def forward(self, x):
-            """
-            In the forward function we accept a Variable of input data and we must
-            return a Variable of output data. We can use Modules defined in the
-            constructor as well as arbitrary operators on Variables.
-            """
-            h_relu = F.relu(self.linear1(x))
-            y_pred = self.linear2(h_relu)
-            return y_pred
-
-def loadData(train_folder, validation_folder, test_folder, batch=8  ):
-    # load data
-    parser = argparse.ArgumentParser(description='COVID19')
-
-    train_dataset = ImageFolder(root=train_folder, transform=Augmentation())
-    train_loaded = DataLoader(train_dataset, batch_size=batch, shuffle=True)
-
-    val_dataset = ImageFolder(root=validation_folder, transform=Augmentation())
-    val_loaded = DataLoader(val_dataset, batch_size=batch, shuffle=True)
-
-    # test dataset with augmentation
-    test_dataset_A = ImageFolder(root=test_folder, transform=Augmentation())
-    test_loaded_A = DataLoader(test_dataset_A, batch_size=batch, shuffle=True)
-
-    # test dataset without augmentation
-    #test_dataset_N = ImageFolder(root=args.test_folder, transform=ToTensor())
-    #test_loaded_N = DataLoader(test_dataset_N, batch_size=args.batch, shuffle=True)
+from torchvision import transforms
 
 
-    # get covid data once I have it
-    '''
-    with open(trainfile) as f:
-        trainfiles = f.readlines()
-    with open(testfile) as f:
-        testfiles = f.readlines()
-    '''
-    # balance dataset
-    '''
-    generator = BalanceCovidDataset(data_dir=datadir,
-                                    csv_file=trainfile,
-                                    covid_percent=covid_percent,
-                                    class_weights=[1., 1., covid_weight])
-    '''
+# import Augmentate
+import data
+import utils
+import eval
+from model_covid import CovidNet
 
-    return train_loaded, val_loaded, test_loaded_A
+def save_model(args_dict, state):
+    """
+    Saves model
+    """
+    directory = args_dict.dir_model
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    filename = directory + 'best_model.pth.tar'
+    torch.save(state, filename)
 
-# Train and evaluate
-def train_model(model, train_loader, criterion, m, optimizer, scheduler, num_epochs=10,
-                display_step=1):
-    # out path
-    outputPath = './output/'
-    runID = name + '-lr' + str(learning_rate)
-    runPath = outputPath + runID
-    pathlib.Path(runPath).mkdir(parents=True, exist_ok=True)
-    print('Output: ' + runPath)
+def resume(args_dict, model, optimizer):
+    """
+    Continue training from a checkpoint
+    :return: args_dict, model, optimizer from the checkppoint
+    """
+    best_sensit = -float('Inf')
+    args_dict.start_epoch = 0
+    if args_dict.resume:
+        if os.path.isfile(args_dict.resume):
+            print("=> loading checkpoint '{}'".format(args_dict.resume))
+            checkpoint = torch.load(args_dict.resume)
+            args_dict.start_epoch = checkpoint['epoch']
+            best_sensit = checkpoint['best_val']
+            model.load_state_dict(checkpoint['state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(args_dict.resume, checkpoint['epoch']))
+        else:
+            print("=> no checkpoint found at '{}'".format(args_dict.resume))
+            best_sensit = -float('Inf')
 
-
-    print('Training started')
-    losses = []
-
-    for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-        print('-' * 10)
-
-        model.train()
-
-        # Iterate over data batches
-        for batch_idx, (inputs, y_batch) in enumerate(Bar(train_loader)):
-            inputs = inputs.to(device)
-            y_batch = y_batch.to(device)
-
-            # load weights
-            '''
-            saver.restore(sess, os.path.join(args.weightspath, args.ckptname))'''
-            sample_weight = torch.empty(inputs.shape).uniform_(0, 1) # weights in covid given as argument
-            # print(y_batch)
-            #sample_weight = np.take(class_weights, y_batch)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward
-            outputs = model(inputs)
-            # _, preds = torch.max(outputs, 1)
-            print(m(outputs).shape)
-            loss = torch.mean(criterion(m(outputs), y_batch) * sample_weight)  # weights given as argument
-            losses.append(loss)
-
-            # backward
-            loss.backward()
-            optimizer.step()
-
-        if epoch % display_step == 0:
-            loss = torch.mean(criterion(m(outputs), y_batch) * sample_weight)
-            print(loss.item())  # print some info - more detailed in covid
-            _, preds = torch.max(outputs, 1)
-            print("Epoch:", '%04d' % (epoch + 1), "Minibatch loss=", "{:.9f}".format(loss))
-            # call eval: TODO eval(sess, graph, testfiles, 'test')
-            # save
-            '''saver.save(sess, os.path.join(runPath, 'model'), global_step=epoch+1, write_meta_graph=False)'''
-            # torch.save(model.state_dict(), weightspath) # saving the model in pytorch
-            # print('Saving checkpoint at epoch {}'.format(epoch + 1))
-
-        metric = 0
-        scheduler.step(metric)
+    return best_sensit, model, optimizer
 
 
-#######################
+def valEpoch(args_dict, dl_test, model):
 
-'''
-class Training:
-    def __init__(self, model,  epochs=10, learning_rate = 2e-5, bs = 8, weightspath = 'models/COVIDNet-CXR-Large', 
-                 metaname = 'model.meta',ckptname = 'model-8485', trainfile = 'train_COVIDx2.txt', 
-                 testfile = 'test_COVIDx2.txt', name = 'COVIDNet',datadir = 'data', covid_weight = 12, covid_percent = 0.3, class_weights = [1., 1., 6.] ):
-        self.model = model
-        self.num_epochs = epochs
-        self.learning_rate = learning_rate
-        self.bs = bs
-        self.weightspath = weightspath
-        self.metaname = metaname
-        self.ckptname = ckptname
-        self.trainfile = trainfile
-        self.testfile = testfile
-        self.name = name
-        self.datadir = datadir
-        self.covid_weight = covid_weight
-        self.covid_percent = covid_percent
-        self.class_weights = class_weights
-'''
+    # switch to evaluation mode
+    model.eval()
+    for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
+        x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
+        y_hat = np.argmax(model(x_batch).detach().numpy(), axis=1)
+        # Save embeddings to compute metrics
+        if batch_idx == 0:
+            pred = y_hat
+            y_test = y_batch
+        else:
+            pred = np.concatenate((pred, y_hat))
+            y_test = np.concatenate((y_test, y_batch))
+
+    return eval.create_metrics(y_test, pred)
+
+def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, epoch):
+    # object to store & plot the losses
+    losses = utils.AverageMeter()
+    accuracies = utils.AverageMeter()
+
+    # switch to train mode
+    model.train()
+    for batch_idx, (x_batch_nc, y_batch_nc, weights_nc) in enumerate(dl_non_covid):
+        x_batch_c, y_batch_c, weights_c = next(iter(dl_covid))
+
+        x_batch = torch.cat((x_batch_nc, x_batch_c)).to(args_dict.device)
+        y_batch = torch.cat((y_batch_nc, y_batch_c)).to(args_dict.device)
+        weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)  # What should we do with it?
+
+        # Model output
+        output = model(x_batch)
+
+        # Loss
+        train_loss = criterion(output, y_batch)
+        losses.update(train_loss.data.cpu().numpy(), x_batch[0].size(0))
+
+        # Accuracy
+        max_indices = torch.max(output, axis=1)[1]
+        train_acc = (max_indices == y_batch).sum().item() / max_indices.size()[0]
+        accuracies.update(train_acc, x_batch[0].size(0))
+
+        optimizer.zero_grad()
+        train_loss.backward()
+        optimizer.step()
+
+        # Print info
+        print('Train Epoch: {} [{}/{} ({:.0f}%)]\t'
+              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+              'Accuracy {accuracy.val:.4f} ({accuracy.avg:.4f})\t'.format(
+               epoch, batch_idx, len(dl_non_covid), 100. * batch_idx / len(dl_non_covid),
+               loss=losses, accuracy=accuracies))
+
+        # Debug
+        if batch_idx == 10:
+            break
+
+    # Plot loss
+    plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
+    plotter.plot('Acc', 'train', 'Accuracy', epoch, accuracies.avg)
+
+def train_model(args_dict):
+
+    # Define model
+    model = CovidNet(args_dict.n_classes)
+
+    # Loss and optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=args_dict.lr)
+    criterion = nn.CrossEntropyLoss(weight=torch.Tensor(args_dict.class_weights))
+
+    # Resume training if needed
+    best_sensit, model, optimizer = resume(args_dict, model, optimizer)
+
+    # Load data
+
+    # Augmentation
+    train_transformation = transforms.Compose([
+        transforms.Resize(256),                             # rescale the image keeping the original aspect ratio
+        transforms.CenterCrop(256),                         # we get only the center of that rescaled
+        transforms.RandomCrop(224),                         # random crop within the center crop (data augmentation)
+        transforms.ColorJitter(brightness=(0.9, 1.1)),
+        transforms.RandomRotation((-10,10)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomAffine(0,translate=(0.1,0.1), shear=10, scale=(0.85, 1.15), fillcolor=0),
+        #TransformShow(), # visualize transformed pic
+        transforms.ToTensor(),
+    ])
+
+    val_transforms = transforms.Compose([
+        transforms.Resize(256),                             # rescale the image keeping the original aspect ratio
+        transforms.CenterCrop(256),                         # we get only the center of that rescaled
+        transforms.RandomCrop(224),                         # random crop within the center crop (data augmentation)
+        transforms.ToTensor()                               # to pytorch tensor
+    ])
+
+    # Dataloaders for training and validation
+    # preprocess the given txt files: Train
+    datasets_train, _, labels, labels_non, labels_cov = data.preprocessSplit(args_dict.train_txt)
+
+    # create Datasets
+    train_non_covid = data.Dataset(datasets_train[0], labels_non, args_dict.train_folder, transform=train_transformation)
+    train_covid = data.Dataset(datasets_train[1], labels_cov, args_dict.train_folder, transform=train_transformation)
+
+    covid_size = max(int(args_dict.batch * args_dict.covid_percent), 1)
+
+    # create data loader
+    dl_non_covid = DataLoader(train_non_covid, batch_size=(args_dict.batch - covid_size), shuffle=True)  # num_workers= 2
+    dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True)  # num_workers= 2
 
 
-# added from args
-learning_rate = 2e-5
-num_epochs = 10
-bs = 8
-weightspath = 'models/COVIDNet-CXR-Large'
-metaname = 'model.meta'
-ckptname = 'model-8485'
-trainfile = 'train_COVIDx2.txt'
-testfile = 'test_COVIDx2.txt'
-name = 'COVIDNet'
-datadir = 'data'
-covid_weight = 12
-covid_percent= 0.3
-
-class_weights=[1., 1., 6.]
-display_step = 1
-
-#### session starts
-# get default graph
-''' 
-saver = .import_meta_graph(os.path.join(args.weightspath, args.metaname)) # import the pretrained weights
-'''
-# torch.save(model.state_dict(), weightspath) # saving the model in pytorch
-# model = PyTorchModel()
-# loaded_model = model.load_state_dict(torch.load(weightspath)) # load weights
-
-# get var from loaded graph ??????
-''' image_tensor = graph.get_tensor_by_name("input_1:0")
-    labels_tensor = graph.get_tensor_by_name("dense_3_target:0")
-    sample_weights = graph.get_tensor_by_name("dense_3_sample_weights:0")
-    pred_tensor = graph.get_tensor_by_name("dense_3/MatMul:0")'''
-
-# sample_weight = torch.empty((1,1)).uniform_(0, 1) # weights in covid given as argument
-# labels_tensor = torch.empty((1,0)).uniform_(0, 1)
-# pred_tensor = torch.empty((1,0)).uniform_(0, 1)
+    # Data loading for test
+    # preprocess the given txt files: Test
+    _, data_test, labels_test, _, _ = data.preprocessSplit(args_dict.test_txt)
+    # create Datasets
+    test_dataset = data.Dataset(data_test, labels_test, args_dict.test_folder, transform=val_transforms)
+    # create data loader
+    dl_test = DataLoader(test_dataset, batch_size=args_dict.batch, shuffle=False,  num_workers=1)
 
 
+    # Now, let's start the training process!
+    print('Start training...')
+    pat_track = 0
+    for epoch in range(args_dict.epochs):
 
-# Initialize the variables
-'''
-init = tf.global_variables_initializer()
-equals tf.variables_initializer(var_list, name='init'), var_list = global_variables
-'''
-# pyTorch something like:
-# init = nn.init() #?
+        # Compute a training epoch
+        trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, epoch)
 
-# load weights
-# loaded_model = model.load_state_dict(torch.load(weightspath)) # load weights
+        # Compute a validation epoch
+        sensitivity_covid, accuracy = valEpoch(args_dict, dl_test, model)
 
-# save base model
-# torch.save(model.state_dict(), weightspath) # saving the model in pytorch
-# baseline eval
-'''
-  eval(sess, graph, testfiles, 'test')
-'''
+        # TODO: implement the patience stop
+        # check patience
+        # if accval >= best_val:
+        #     pat_track += 1
+        # else:
+        #     pat_track = 0
+        # if pat_track >= args_dict.patience:
+        #     args_dict.freeVision = args_dict.freeComment
+        #     args_dict.freeComment = not args_dict.freeVision
+        #     optimizer.param_groups[0]['lr'] = args_dict.lr * args_dict.freeComment
+        #     optimizer.param_groups[1]['lr'] = args_dict.lr * args_dict.freeVision
+        #     print('Initial base params lr: %f' % optimizer.param_groups[0]['lr'])
+        #     print('Initial vision lr: %f' % optimizer.param_groups[1]['lr'])
+        #     print('Initial classifier lr: %f' % optimizer.param_groups[2]['lr'])
+        #     args_dict.patience = 3
+        #     pat_track = 0
 
-train_loader, val_loader, test_loader = loadData('data/train/', 'data/test/', 'data/test/', 8)
-model = Net().to(device)
+        # TODO: save the model in case of a better sensitivity
+        # save if it is the best model
+        if accuracy >= 0.75:  # only compare sensitivity if we have a minimum accuracy of 0.8
+            is_best = sensitivity_covid > best_sensit
+            if is_best:
+                best_sensit = max(sensitivity_covid, best_sensit)
+                save_model(args_dict, {
+                    'epoch': epoch + 1,
+                    'state_dict': model.state_dict(),
+                    'best_sensit': best_sensit,
+                    'optimizer': optimizer.state_dict(),
+                    'valtrack': pat_track,
+                    # 'freeVision': args_dict.freeVision,
+                    'curr_val': accuracy,
+                })
+        print('** Validation: %f (best_sensitivity) - %f (current acc) - %d (patience)' % (best_sensit, accuracy,
+                                                                                           pat_track))
 
-# optimzer + loss
-m = nn.LogSoftmax(dim=1)
-criterion = nn.NLLLoss()
-# loss_op = torch.mean(criterion(m( pred_tensor), labels_tensor)* sample_weight)
+        # Plot
+        plotter.plot('Sensitivity', 'test', 'sensitivity covid', epoch, sensitivity_covid)
+        plotter.plot('Accuracy', 'test', 'Accuracy', epoch, accuracy)
 
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+def run_train(args_dict):
+    # Set seed for reproducibility
+    torch.manual_seed(args_dict.seed)
 
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, patience=5, verbose=True)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    args_dict.device = device
 
-train_model(model, train_loader, criterion, m, optimizer, scheduler, num_epochs=10,
-                display_step=1)
+    # Plots
+    global plotter
+    plotter = utils.VisdomLinePlotter(env_name=args_dict.name)
 
-
+    # Main process
+    train_model(args_dict)
