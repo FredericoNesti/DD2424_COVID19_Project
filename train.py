@@ -57,7 +57,7 @@ def valEpoch(args_dict, dl_test, model):
     model.eval()
     for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
-        y_hat = np.argmax(model(x_batch).detach().numpy(), axis=1)
+        y_hat = np.argmax(model(x_batch).cpu().numpy(), axis=1)
         # Save embeddings to compute metrics
         if batch_idx == 0:
             pred = y_hat
@@ -106,8 +106,8 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
                loss=losses, accuracy=accuracies))
 
         # Debug
-        # if batch_idx == 10:
-        #     break
+        if batch_idx == 10:
+            break
 
     # Plot loss
     # plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
