@@ -226,8 +226,13 @@ def run_train(args_dict):
     # Set seed for reproducibility
     torch.manual_seed(args_dict.seed)
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    args_dict.device = device
+    # Set up device
+    if torch.cuda.is_available():
+        args_dict.device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc.
+        print("Running on the GPU")
+    else:
+        args_dict.device = torch.device("cpu")
+        print("Running on the CPU")
 
     # Plots
     global plotter
