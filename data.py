@@ -5,6 +5,7 @@ import cv2
 from PIL import Image
 from matplotlib import pyplot as plt
 import torch
+from torchvision import transforms as tf
 
 # taken from covid net
 def _process_csv_file(file):
@@ -30,8 +31,6 @@ def preprocessSplit(csv_file):
         datasets['normal'] + datasets['pneumonia'],
         datasets['COVID-19'],
     ]
-
-
     return datasets, pictures, labels, labels_non, labels_cov
 
 # https://discuss.pytorch.org/t/balanced-sampling-between-classes-with-torchvision-dataloader/2703/3
@@ -70,22 +69,17 @@ class Dataset(data.Dataset):
         # Select sample
         ID = self.list_IDs[index]
 
-        # data loading taken from covid net
-        X = cv2.imread(os.path.join(self.datadir, ID))
-        h, w, c = X.shape
-        X = X[int(h / 6):, :]
-        X = cv2.resize(X, self.input_shape)
+        #PIL loading
+        image = Image.open(os.path.join(self.datadir, ID)).convert('RGB')
+        im_pil = image.resize(self.input_shape)
 
         if self.transform: # see https://stackoverflow.com/questions/43232813/convert-opencv-image-format-to-pil-image-format
-            img = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
-            im_pil = Image.fromarray(img)
-
             #plt.imshow(np.asarray(im_pil))
             #plt.show()
             X = self.transform(im_pil)
         else:
-            X = X.astype('float32') / 255.0
-            X = torch.from_numpy(X)
+            transformer_tf = tf.ToTensor()
+            X = transformer_tf(im_pil)
 
         y = self.labels[index]
 
