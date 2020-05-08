@@ -106,8 +106,8 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
                loss=losses, accuracy=accuracies))
 
         # Debug
-        if batch_idx == 10:
-            break
+        # if batch_idx == 10:
+        #     break
 
     # Plot loss
     plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
@@ -117,6 +117,7 @@ def train_model(args_dict):
 
     # Define model
     model = CovidNet(args_dict.n_classes)
+    model.to(args_dict.device)
 
     # Loss and optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args_dict.lr)
