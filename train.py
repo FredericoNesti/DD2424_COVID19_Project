@@ -61,10 +61,10 @@ def valEpoch(args_dict, dl_test, model):
         # Save embeddings to compute metrics
         if batch_idx == 0:
             pred = y_hat
-            y_test = y_batch
+            y_test = y_batch.cpu().data.numpy()
         else:
             pred = np.concatenate((pred, y_hat))
-            y_test = np.concatenate((y_test, y_batch))
+            y_test = np.concatenate((y_test, y_batch.cpu().data.numpy()))
 
     return eval.create_metrics(y_test, pred)
 
