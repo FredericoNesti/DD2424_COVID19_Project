@@ -110,8 +110,8 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
         #     break
 
     # Plot loss
-    plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
-    plotter.plot('Acc', 'train', 'Accuracy', epoch, accuracies.avg)
+    # plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
+    # plotter.plot('Acc', 'train', 'Accuracy', epoch, accuracies.avg)
 
 def train_model(args_dict):
 
@@ -219,8 +219,8 @@ def train_model(args_dict):
                                                                                            pat_track))
 
         # Plot
-        plotter.plot('Sensitivity', 'test', 'sensitivity covid', epoch, sensitivity_covid)
-        plotter.plot('Accuracy', 'test', 'Accuracy', epoch, accuracy)
+        # plotter.plot('Sensitivity', 'test', 'sensitivity covid', epoch, sensitivity_covid)
+        # plotter.plot('Accuracy', 'test', 'Accuracy', epoch, accuracy)
 
 def run_train(args_dict):
     # Set seed for reproducibility
@@ -235,8 +235,8 @@ def run_train(args_dict):
         print("Running on the CPU")
 
     # Plots
-    global plotter
-    plotter = utils.VisdomLinePlotter(env_name=args_dict.name)
+    # global plotter
+    # plotter = utils.VisdomLinePlotter(env_name=args_dict.name)
 
     # Main process
     train_model(args_dict)
