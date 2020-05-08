@@ -83,7 +83,7 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
         weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)  # What should we do with it?
 
         # Model output
-        output = model(x_batch)
+        output = model(x_batch).to(args_dict.device)
 
         # Loss
         train_loss = criterion(output, y_batch)
