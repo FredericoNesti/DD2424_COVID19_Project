@@ -4,7 +4,7 @@ import numpy as np
 
 def Augmentation(r=(-10,10), t=(0.1,0.1),shear=10, scale=(0.85, 1.15) ,b=(0.9, 1.1),cval=0):
     transformation = tf.Compose([
-        #tf.Resize((224, 224)),
+        #tf.Resize(224),
         tf.ColorJitter(brightness=b),
         tf.RandomRotation(r, fill=cval),
         tf.RandomHorizontalFlip(),

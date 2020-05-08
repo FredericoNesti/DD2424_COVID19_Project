@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 from model_covid import CovidNet
 from sklearn.metrics import accuracy_score
 
-
 def test(test_txt, test_folder, batch, device, path):
     y_test = []
     pred = []
@@ -26,8 +25,6 @@ def test(test_txt, test_folder, batch, device, path):
     for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         y_test.append(y_batch)
         pred.append(np.argmax(model(x_batch).detach().numpy(), axis=1))
-        if batch_idx == 1000:
-            break
 
     y_test = np.array(y_test)
     pred = np.array(pred)
@@ -47,6 +44,7 @@ def create_metrics(y_test, pred):
     acc = accuracy_score(y_test, pred)
     print("Accuracy", acc)
 
+
     # From COVIDNET
     class_acc = [matrix[i, i] / np.sum(matrix[i, :]) if np.sum(matrix[i, :]) else 0 for i in range(len(matrix))]
     print('Sens Pneumonia: {0:.3f}, Normal: {1:.3f}, COVID-19: {2:.3f}'.format(class_acc[0],
@@ -57,4 +55,6 @@ def create_metrics(y_test, pred):
                                                                              ppvs[1],
                                                                              ppvs[2]))
 
+
     return sensitivity_covid, acc
+
