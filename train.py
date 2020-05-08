@@ -57,7 +57,7 @@ def valEpoch(args_dict, dl_test, model):
     model.eval()
     for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
-        y_hat = np.argmax(model(x_batch).cpu().detach().numpy(), axis=1)
+        y_hat = np.argmax(model(x_batch).detach().numpy(), axis=1)
         # Save embeddings to compute metrics
         if batch_idx == 0:
             pred = y_hat
