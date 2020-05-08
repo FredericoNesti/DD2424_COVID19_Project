@@ -83,7 +83,7 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
         weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)  # What should we do with it?
 
         # Model output
-        output = model(x_batch).to(args_dict.device)
+        output = model(x_batch)
 
         # Loss
         train_loss = criterion(output, y_batch)
@@ -121,7 +121,7 @@ def train_model(args_dict):
 
     # Loss and optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args_dict.lr)
-    criterion = nn.CrossEntropyLoss(weight=torch.Tensor(args_dict.class_weights))
+    criterion = nn.CrossEntropyLoss(weight=torch.Tensor(args_dict.class_weights).to(args_dict.device))
 
     # Resume training if needed
     best_sensit, model, optimizer = resume(args_dict, model, optimizer)
