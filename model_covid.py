@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torchvision import models
 import torch.nn.functional as F
 
 class Flatten(nn.Module):
@@ -138,3 +139,28 @@ class CovidNet(nn.Module):
             pp += nn
 
         return pp
+
+
+
+
+class ResNet(nn.Module):
+    # Inputs an image and ouputs the prediction for the class and the projected embedding into the graph space
+
+    def __init__(self, num_class):
+        super(ResNet, self).__init__()
+
+        # Load pre-trained visual model
+        resnet = models.resnet50(pretrained=True)
+        self.resnet = nn.Sequential(*list(resnet.children())[:-1])
+
+        # Classifier
+        self.classifier = nn.Sequential(nn.Linear(2048, num_class))
+
+
+    def forward(self, img):
+
+        visual_emb = self.resnet(img)
+        visual_emb = visual_emb.view(visual_emb.size(0), -1)
+        logits = self.classifier(visual_emb)
+
+        return logits

@@ -1,21 +1,16 @@
-# imports
-import os, argparse, pathlib
-import numpy as np
+import os
 
 import torch
 import torch.nn as nn
 
-from sklearn.metrics import accuracy_score
-from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
 from torchvision import transforms
-
 
 # import Augmentate
 import data
 import utils
 import eval
-from model_covid import CovidNet
+from model_covid import CovidNet, ResNet
 
 def save_model(args_dict, state):
     """
@@ -24,49 +19,8 @@ def save_model(args_dict, state):
     directory = args_dict.dir_model
     if not os.path.exists(directory):
         os.makedirs(directory)
-    filename = directory + 'best_model.pth.tar'
+    filename = directory + args_dict.model + '_best_model.pth.tar'
     torch.save(state, filename)
-
-def resume(args_dict, model, optimizer):
-    """
-    Continue training from a checkpoint
-    :return: args_dict, model, optimizer from the checkppoint
-    """
-    best_sensit = -float('Inf')
-    args_dict.start_epoch = 0
-    if args_dict.resume:
-        if os.path.isfile(args_dict.resume):
-            print("=> loading checkpoint '{}'".format(args_dict.resume))
-            checkpoint = torch.load(args_dict.resume)
-            args_dict.start_epoch = checkpoint['epoch']
-            best_sensit = checkpoint['best_val']
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            print("=> loaded checkpoint '{}' (epoch {})"
-                  .format(args_dict.resume, checkpoint['epoch']))
-        else:
-            print("=> no checkpoint found at '{}'".format(args_dict.resume))
-            best_sensit = -float('Inf')
-
-    return best_sensit, model, optimizer
-
-
-def valEpoch(args_dict, dl_test, model):
-
-    # switch to evaluation mode
-    model.eval()
-    for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
-        x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
-        y_hat = np.argmax(model(x_batch).cpu().data.numpy(), axis=1)
-        # Save embeddings to compute metrics
-        if batch_idx == 0:
-            pred = y_hat
-            y_test = y_batch.cpu().data.numpy()
-        else:
-            pred = np.concatenate((pred, y_hat))
-            y_test = np.concatenate((y_test, y_batch.cpu().data.numpy()))
-
-    return eval.create_metrics(y_test, pred)
 
 def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, epoch):
     # object to store & plot the losses
@@ -75,12 +29,12 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
 
     # switch to train mode
     model.train()
-    for batch_idx, (x_batch_nc, y_batch_nc, weights_nc) in enumerate(dl_non_covid):
-        x_batch_c, y_batch_c, weights_c = next(iter(dl_covid))
+    for batch_idx, (x_batch_nc, y_batch_nc, _) in enumerate(dl_non_covid):
+        x_batch_c, y_batch_c, _ = next(iter(dl_covid))
 
         x_batch = torch.cat((x_batch_nc, x_batch_c)).to(args_dict.device)
         y_batch = torch.cat((y_batch_nc, y_batch_c)).to(args_dict.device)
-        weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)  # What should we do with it?
+        # weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)  # What should we do with it?
 
         # Model output
         output = model(x_batch)
@@ -106,7 +60,7 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
                loss=losses, accuracy=accuracies))
 
         # Debug
-        # if batch_idx == 10:
+        # if batch_idx == 5:
         #     break
 
     # Plot loss
@@ -116,7 +70,11 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
 def train_model(args_dict):
 
     # Define model
-    model = CovidNet(args_dict.n_classes)
+    if args_dict.model == "covidnet":
+        model = CovidNet(args_dict.n_classes)
+    elif args_dict.model == "resnet":
+        model = ResNet(args_dict.n_classes)
+
     model.to(args_dict.device)
 
     # Loss and optimizer
@@ -124,7 +82,7 @@ def train_model(args_dict):
     criterion = nn.CrossEntropyLoss(weight=torch.Tensor(args_dict.class_weights).to(args_dict.device))
 
     # Resume training if needed
-    best_sensit, model, optimizer = resume(args_dict, model, optimizer)
+    best_sensit, model, optimizer = utils.resume(args_dict, model, optimizer)
 
     # Load data
 
@@ -181,7 +139,7 @@ def train_model(args_dict):
         trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, epoch)
 
         # Compute a validation epoch
-        sensitivity_covid, accuracy = valEpoch(args_dict, dl_test, model)
+        sensitivity_covid, accuracy = eval.valEpoch(args_dict, dl_test, model)
 
         # TODO: implement the patience stop
         # check patience
@@ -202,7 +160,7 @@ def train_model(args_dict):
 
         # TODO: save the model in case of a better sensitivity
         # save if it is the best model
-        if accuracy >= 0.75:  # only compare sensitivity if we have a minimum accuracy of 0.8
+        if accuracy >= 0.01:  # only compare sensitivity if we have a minimum accuracy of 0.8
             is_best = sensitivity_covid > best_sensit
             if is_best:
                 best_sensit = max(sensitivity_covid, best_sensit)

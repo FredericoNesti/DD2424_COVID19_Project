@@ -1,20 +1,31 @@
-import pickle
-import numpy as np
+import os
+import torch
+# import numpy as np
 # from visdom import Visdom
 
-def save_obj(obj, filename):
-    f = open(filename, 'wb')
-    pickle.dump(obj, f)
-    f.close()
-    print("Saved object to %s." % filename)
+def resume(args_dict, model, optimizer):
+    """
+    Continue training from a checkpoint
+    :return: args_dict, model, optimizer from the checkppoint
+    """
+    best_sensit = -float('Inf')
+    args_dict.start_epoch = 0
+    if args_dict.resume:
+        model_path = args_dict.dir_model + args_dict.model + '_best_model.pth.tar'
+        if os.path.isfile(model_path):
+            print("=> loading checkpoint '{}'".format(args_dict.resume))
+            checkpoint = torch.load(model_path)
+            args_dict.start_epoch = checkpoint['epoch']
+            best_sensit = checkpoint['best_sensit']
+            model.load_state_dict(checkpoint['state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(args_dict.model, checkpoint['epoch']))
+        else:
+            print("=> no checkpoint found at '{}'".format(model_path))
+            best_sensit = -float('Inf')
 
-
-def load_obj(filename):
-    f = open(filename, 'rb')
-    obj = pickle.load(f)
-    f.close()
-    return obj
-
+    return best_sensit, model, optimizer
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
