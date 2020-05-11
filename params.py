@@ -6,7 +6,7 @@ def get_parser():
     parser.add_argument('--name', type=str, default='covid', metavar='N', help='name of the environment')
     # training params
     parser.add_argument('--device', type=str, default='cuda', metavar='N', help='')
-    parser.add_argument('--mode', type=str, default='train', metavar='N', help='[train, test]')
+    parser.add_argument('--mode', type=str, default='test', metavar='N', help='[train, test]')
     parser.add_argument('--seed', type=int, default=1234, metavar='N', help='seed for reproducibility')
 
     # Model params
@@ -22,10 +22,10 @@ def get_parser():
 
 
     # data sources
-    parser.add_argument('--train_folder', type=str, default='data/train', metavar='N', help='')
-    parser.add_argument('--test_folder', type=str, default='data/test', metavar='N', help='')
+    parser.add_argument('--train_folder', type=str, default='data/train/1', metavar='N', help='')
+    parser.add_argument('--test_folder', type=str, default='data/test/1', metavar='N', help='')
     parser.add_argument('--train_txt', type=str, default='data/train_split_v3.txt', metavar='N', help='')
-    parser.add_argument('--test_txt', type=str, default='data/test_split_v3.txt', metavar='N', help='')
+    parser.add_argument('--test_txt', type=str, default='data/test_split_gradcam.txt', metavar='N', help='')
     parser.add_argument('--covid_percent', type=float, default=0.3, metavar='N', help='')
 
     # results params

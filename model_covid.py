@@ -68,6 +68,9 @@ class CovidNet(nn.Module):
         self.add_module('fc2', nn.Linear(1024, 256))
         self.add_module('classifier', nn.Linear(256, n_classes))
 
+        # grad cam
+        self.gradients = None
+
 
     def forward(self, img):
         # CHUNK 0
@@ -117,14 +120,27 @@ class CovidNet(nn.Module):
         # FINAL CHUNK
         flattened = self.flatten(pepx41 + pepx42 + pepx43 + out_conv4_1x1)
 
+
         fc1out = F.relu(self.fc1(flattened))
         fc2out = F.relu(self.fc2(fc1out))
+        h = fc2out.register_hook(self.activations_hook)
+
         logits = self.classifier(fc2out)
 
         # probs = torch.softmax(logits, dim=1)
         # winners = probs.argmax(dim=1)
 
         return logits
+
+    # grad cam from this tutorial: https://medium.com/@stepanulyanin/implementing-grad-cam-in-pytorch-ea0937c31e82
+    # hook for the gradients of the activations
+    def activations_hook(self, grad):
+        self.gradients = grad
+
+    # method for the gradient extraction
+    def get_activations_gradient(self):
+        return self.gradients
+
 
     def get_n_params(self):
         """

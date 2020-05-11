@@ -1,9 +1,13 @@
 import torch
 import numpy as np
+from gradcam import GradCAM, GradCAMpp
+from gradcam.utils import visualize_cam
 
 from sklearn.metrics import accuracy_score, confusion_matrix
 from torch.utils.data import DataLoader
 from torchvision import transforms
+from torchvision.utils import make_grid
+from matplotlib import pyplot as plt
 
 import data
 import utils
@@ -15,7 +19,8 @@ def valEpoch(args_dict, dl_test, model):
     model.eval()
     for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
-        y_hat = np.argmax(model(x_batch).cpu().data.numpy(), axis=1)
+        output = model(x_batch)
+        y_hat = np.argmax(output.cpu().data.numpy(), axis=1)
         # Save embeddings to compute metrics
         if batch_idx == 0:
             pred = y_hat
@@ -24,7 +29,27 @@ def valEpoch(args_dict, dl_test, model):
             pred = np.concatenate((pred, y_hat))
             y_test = np.concatenate((y_test, y_batch.cpu().data.numpy()))
 
-    return create_metrics(y_test, pred)
+    if args_dict.model == 'resnet':
+        grid_image, images = grad_cam(model, x_batch)
+    elif args_dict.model == 'covidnet':
+        output[:, pred].backward()
+        gradients = model.get_activations_gradient()
+        #pooled_gradients = torch.mean(gradients, dim=[0, 2, 3])
+        #activations = model.get_activations(x_batch).detach()
+
+
+    #return create_metrics(y_test, pred)
+
+# Grad-Cam implementation from:  https://github.com/vickyliin/gradcam_plus_plus-pytorch
+def grad_cam(model, x_batch):
+    images = []
+    gradcam = GradCAM.from_config(arch=model._modules['resnet'], model_type='resnet', layer_name='7')
+    mask, _ = gradcam(x_batch)
+    heatmap, result = visualize_cam(mask, x_batch)
+    images.extend([torch.reshape(x_batch, [3, 224, 224]).cpu(), heatmap, result])
+    grid_image = make_grid(images, nrow=3)
+    #plt.imshow(np.asarray(transforms.ToPILImage()(grid_image)))
+    return grid_image, images
 
 def run_test(args_dict):
 
