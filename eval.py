@@ -56,10 +56,6 @@ def valEpoch(args_dict, dl_test, model):
 
         apply_heatmap(heatmap, x_batch)
 
-
-
-
-
     #return create_metrics(y_test, pred)
 
 def apply_heatmap(heatmap, x_batch):
