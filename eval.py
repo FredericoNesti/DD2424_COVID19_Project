@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 import data
 import utils
 from model_covid import CovidNet, ResNet
+import cv2
 
 def valEpoch(args_dict, dl_test, model):
 
@@ -34,11 +35,45 @@ def valEpoch(args_dict, dl_test, model):
     elif args_dict.model == 'covidnet':
         output[:, pred].backward()
         gradients = model.get_activations_gradient()
-        #pooled_gradients = torch.mean(gradients, dim=[0, 2, 3])
-        #activations = model.get_activations(x_batch).detach()
+        pooled_gradients = torch.mean(gradients, dim=[0, 2, 3])
+        activations = model.get_activations(x_batch).detach()
+
+        for i in range(2048):
+            activations[:, i, :, :] *= pooled_gradients[i]
+
+        # average the channels of the activations
+        heatmap = torch.mean(activations, dim=1).squeeze()
+
+        # relu on top of the heatmap
+        # expression (2) in https://arxiv.org/pdf/1610.02391.pdf
+        #heatmap = np.minimum(heatmap, 0)
+
+        # normalize the heatmap
+        heatmap /= torch.min(heatmap)
+
+        # draw the heatmap
+        plt.matshow(heatmap.squeeze())
+
+        apply_heatmap(heatmap, x_batch)
+
+
+
 
 
     #return create_metrics(y_test, pred)
+
+def apply_heatmap(heatmap, x_batch):
+    img = x_batch[0].numpy().transpose((1,2,0))
+    #img = cv2.imread('./data/test/1/covid-19-rapidly-progressive-acute-respiratory-distress-syndrome-ards-day-2.jpg')
+    heatmap = heatmap.numpy()
+    heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]), interpolation = cv2.INTER_AREA)
+    heatmap = np.uint8(255 * heatmap)
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    superimposed_img = heatmap * 0.4 + img
+    cv2.imshow('map',superimposed_img)
+    #cv2.imwrite('./map.jpg', superimposed_img)
+    print('end')
+
 
 # Grad-Cam implementation from:  https://github.com/vickyliin/gradcam_plus_plus-pytorch
 def grad_cam(model, x_batch):
