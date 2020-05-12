@@ -129,7 +129,7 @@ def train_model(args_dict):
         scheduler.step(accuracy)
 
         # save if it is the best model
-        if accuracy >= 0.01:  # only compare sensitivity if we have a minimum accuracy of 0.8
+        if accuracy >= 0.80:  # only compare sensitivity if we have a minimum accuracy of 0.8
             is_best = sensitivity_covid > best_sensit
             if is_best:
                 best_sensit = max(sensitivity_covid, best_sensit)
