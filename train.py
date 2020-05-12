@@ -1,8 +1,7 @@
-import os
-
 import torch
 import torch.nn as nn
 
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -87,8 +86,8 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
         #     break
 
     # Plot loss
-    # plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
-    # plotter.plot('Acc', 'train', 'Accuracy', epoch, accuracies.avg)
+    plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
+    plotter.plot('Acc', 'train', 'Accuracy', epoch, accuracies.avg)
 
 def train_model(args_dict):
 
@@ -108,6 +107,7 @@ def train_model(args_dict):
 
     # Resume training if needed
     best_sensit, model, optimizer = utils.resume(args_dict, model, optimizer)
+    scheduler = ReduceLROnPlateau(optimizer, factor=args_dict.factor, patience=args_dict.patience, verbose=True)
 
     # Load data
     dl_non_covid, dl_covid = calculateDataLoaderTrain(args_dict)
@@ -126,24 +126,8 @@ def train_model(args_dict):
         # Compute a validation epoch
         sensitivity_covid, accuracy = eval.valEpoch(args_dict, dl_test, model)
 
-        # TODO: implement the patience stop
-        # check patience
-        # if accval >= best_val:
-        #     pat_track += 1
-        # else:
-        #     pat_track = 0
-        # if pat_track >= args_dict.patience:
-        #     args_dict.freeVision = args_dict.freeComment
-        #     args_dict.freeComment = not args_dict.freeVision
-        #     optimizer.param_groups[0]['lr'] = args_dict.lr * args_dict.freeComment
-        #     optimizer.param_groups[1]['lr'] = args_dict.lr * args_dict.freeVision
-        #     print('Initial base params lr: %f' % optimizer.param_groups[0]['lr'])
-        #     print('Initial vision lr: %f' % optimizer.param_groups[1]['lr'])
-        #     print('Initial classifier lr: %f' % optimizer.param_groups[2]['lr'])
-        #     args_dict.patience = 3
-        #     pat_track = 0
+        scheduler.step(accuracy)
 
-        # TODO: save the model in case of a better sensitivity
         # save if it is the best model
         if accuracy >= 0.01:  # only compare sensitivity if we have a minimum accuracy of 0.8
             is_best = sensitivity_covid > best_sensit
@@ -162,8 +146,8 @@ def train_model(args_dict):
                                                                                            pat_track))
 
         # Plot
-        # plotter.plot('Sensitivity', 'test', 'sensitivity covid', epoch, sensitivity_covid)
-        # plotter.plot('Accuracy', 'test', 'Accuracy', epoch, accuracy)
+        plotter.plot('Sensitivity', 'test', 'sensitivity covid', epoch, sensitivity_covid)
+        plotter.plot('Accuracy', 'test', 'Accuracy', epoch, accuracy)
 
 def run_train(args_dict):
     # Set seed for reproducibility
@@ -178,8 +162,8 @@ def run_train(args_dict):
         print("Running on the CPU")
 
     # Plots
-    # global plotter
-    # plotter = utils.VisdomLinePlotter(env_name=args_dict.name)
+    global plotter
+    plotter = utils.VisdomLinePlotter(env_name=args_dict.name)
 
     # Main process
     train_model(args_dict)

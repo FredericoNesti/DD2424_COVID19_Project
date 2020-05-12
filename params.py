@@ -16,12 +16,13 @@ def get_parser():
     parser.add_argument('--batch', type=int, default=8, metavar='N', help='')
     parser.add_argument('--epochs', type=int, default=23, metavar='N', help='')
     parser.add_argument('--lr', type=str, default=2e-5, metavar='N', help='Learning rate')
+    parser.add_argument('--factor', type=str, default=0.7, metavar='N', help='factor for lr reduction for patience')
     parser.add_argument('--patience', default=5, type=int)
     parser.add_argument('--class_weights', default=[1., 1., 6.], type=list, help='weights for loss for each class')
     parser.add_argument('--resume', default=False, type=bool)
 
 
-    # data sources
+    # data sourcesz
     parser.add_argument('--train_folder', type=str, default='data/train', metavar='N', help='')
     parser.add_argument('--test_folder', type=str, default='data/test', metavar='N', help='')
     parser.add_argument('--train_txt', type=str, default='data/train_split_v3.txt', metavar='N', help='')
