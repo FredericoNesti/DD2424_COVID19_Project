@@ -3,6 +3,21 @@ import torch
 # import numpy as np
 # from visdom import Visdom
 
+def save_model(args_dict, state):
+    """
+    Saves model
+    """
+    directory = args_dict.dir_model
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    if args_dict.mode == 'calibration':
+        filename = directory + "calibrated_" + args_dict.model + '_best_model.pth.tar'
+    else:
+        filename = directory + args_dict.model + '_best_model.pth.tar'
+
+    torch.save(state, filename)
+
 def resume(args_dict, model, optimizer):
     """
     Continue training from a checkpoint

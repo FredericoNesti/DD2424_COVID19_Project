@@ -12,15 +12,38 @@ import utils
 import eval
 from model_covid import CovidNet, ResNet
 
-def save_model(args_dict, state):
-    """
-    Saves model
-    """
-    directory = args_dict.dir_model
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    filename = directory + args_dict.model + '_best_model.pth.tar'
-    torch.save(state, filename)
+
+def calculateDataLoaderTrain(args_dict):
+    # Augmentation
+    train_transformation = transforms.Compose([
+        transforms.Resize(256),  # rescale the image keeping the original aspect ratio
+        transforms.CenterCrop(256),  # we get only the center of that rescaled
+        transforms.RandomCrop(224),  # random crop within the center crop (data augmentation)
+        transforms.ColorJitter(brightness=(0.9, 1.1)),
+        transforms.RandomRotation((-10, 10)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomAffine(0, translate=(0.1, 0.1), shear=10, scale=(0.85, 1.15), fillcolor=0),
+        # TransformShow(), # visualize transformed pic
+        transforms.ToTensor(),
+    ])
+
+    # Dataloaders for training and validation
+    # preprocess the given txt files: Train
+    datasets_train, _, labels, labels_non, labels_cov = data.preprocessSplit(args_dict.train_txt)
+
+    # create Datasets
+    train_non_covid = data.Dataset(datasets_train[0], labels_non, args_dict.train_folder,
+                                   transform=train_transformation)
+    train_covid = data.Dataset(datasets_train[1], labels_cov, args_dict.train_folder, transform=train_transformation)
+
+    covid_size = max(int(args_dict.batch * args_dict.covid_percent), 1)
+
+    # create data loader
+    dl_non_covid = DataLoader(train_non_covid, batch_size=(args_dict.batch - covid_size),
+                              shuffle=True)  # num_workers= 2
+    dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True)  # num_workers= 2
+
+    return dl_non_covid, dl_covid
 
 def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, epoch):
     # object to store & plot the losses
@@ -75,6 +98,8 @@ def train_model(args_dict):
     elif args_dict.model == "resnet":
         model = ResNet(args_dict.n_classes)
 
+    print("model selected: {}".format(args_dict.model))
+
     model.to(args_dict.device)
 
     # Loss and optimizer
@@ -85,50 +110,10 @@ def train_model(args_dict):
     best_sensit, model, optimizer = utils.resume(args_dict, model, optimizer)
 
     # Load data
-
-    # Augmentation
-    train_transformation = transforms.Compose([
-        transforms.Resize(256),                             # rescale the image keeping the original aspect ratio
-        transforms.CenterCrop(256),                         # we get only the center of that rescaled
-        transforms.RandomCrop(224),                         # random crop within the center crop (data augmentation)
-        transforms.ColorJitter(brightness=(0.9, 1.1)),
-        transforms.RandomRotation((-10,10)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomAffine(0,translate=(0.1,0.1), shear=10, scale=(0.85, 1.15), fillcolor=0),
-        #TransformShow(), # visualize transformed pic
-        transforms.ToTensor(),
-    ])
-
-    val_transforms = transforms.Compose([
-        transforms.Resize(256),                             # rescale the image keeping the original aspect ratio
-        transforms.CenterCrop(256),                         # we get only the center of that rescaled
-        transforms.RandomCrop(224),                         # random crop within the center crop (data augmentation)
-        transforms.ToTensor()                               # to pytorch tensor
-    ])
-
-    # Dataloaders for training and validation
-    # preprocess the given txt files: Train
-    datasets_train, _, labels, labels_non, labels_cov = data.preprocessSplit(args_dict.train_txt)
-
-    # create Datasets
-    train_non_covid = data.Dataset(datasets_train[0], labels_non, args_dict.train_folder, transform=train_transformation)
-    train_covid = data.Dataset(datasets_train[1], labels_cov, args_dict.train_folder, transform=train_transformation)
-
-    covid_size = max(int(args_dict.batch * args_dict.covid_percent), 1)
-
-    # create data loader
-    dl_non_covid = DataLoader(train_non_covid, batch_size=(args_dict.batch - covid_size), shuffle=True)  # num_workers= 2
-    dl_covid = DataLoader(train_covid, batch_size=covid_size, shuffle=True)  # num_workers= 2
-
+    dl_non_covid, dl_covid = calculateDataLoaderTrain(args_dict)
 
     # Data loading for test
-    # preprocess the given txt files: Test
-    _, data_test, labels_test, _, _ = data.preprocessSplit(args_dict.test_txt)
-    # create Datasets
-    test_dataset = data.Dataset(data_test, labels_test, args_dict.test_folder, transform=val_transforms)
-    # create data loader
-    dl_test = DataLoader(test_dataset, batch_size=args_dict.batch, shuffle=False,  num_workers=1)
-
+    dl_test = eval.calculateDataLoaderTest(args_dict)
 
     # Now, let's start the training process!
     print('Start training...')
@@ -164,7 +149,7 @@ def train_model(args_dict):
             is_best = sensitivity_covid > best_sensit
             if is_best:
                 best_sensit = max(sensitivity_covid, best_sensit)
-                save_model(args_dict, {
+                utils.save_model(args_dict, {
                     'epoch': epoch + 1,
                     'state_dict': model.state_dict(),
                     'best_sensit': best_sensit,

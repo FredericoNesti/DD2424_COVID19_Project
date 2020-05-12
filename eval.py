@@ -9,24 +9,57 @@ import data
 import utils
 from model_covid import CovidNet, ResNet
 
-def valEpoch(args_dict, dl_test, model):
+
+def calculateDataLoaderTest(args_dict):
+    """
+    return the dataloader for data test
+    """
+    val_transforms = transforms.Compose([
+        transforms.Resize(256),  # rescale the image keeping the original aspect ratio
+        transforms.CenterCrop(256),  # we get only the center of that rescaled
+        transforms.RandomCrop(224),  # random crop within the center crop (data augmentation)
+        transforms.ToTensor()  # to pytorch tensor
+    ])
+
+    # Data loading for test
+    # preprocess the given txt files: Test
+    _, data_test, labels_test, _, _ = data.preprocessSplit(args_dict.test_txt)
+    # create Datasets
+    test_dataset = data.Dataset(data_test, labels_test, args_dict.test_folder, transform=val_transforms)
+    # create data loader
+    dl_test = DataLoader(test_dataset, batch_size=args_dict.batch, shuffle=False, num_workers=1)
+
+    return dl_test
+
+def valEpoch(args_dict, dl_test, model, calibration=False):
+    """
+    evaluation of model
+    """
 
     # switch to evaluation mode
     model.eval()
     for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
-        y_hat = np.argmax(model(x_batch).cpu().data.numpy(), axis=1)
+        prob = model(x_batch).cpu().data.numpy()
+        y_hat = np.argmax(prob, axis=1)
         # Save embeddings to compute metrics
         if batch_idx == 0:
             pred = y_hat
             y_test = y_batch.cpu().data.numpy()
+            probs = prob
         else:
             pred = np.concatenate((pred, y_hat))
             y_test = np.concatenate((y_test, y_batch.cpu().data.numpy()))
+            probs = np.concatenate((probs, prob))
+
+    if calibration:
+        return probs, y_test
 
     return create_metrics(y_test, pred)
 
 def run_test(args_dict):
+
+    print("Start test of model...")
 
     # Set up device
     if torch.cuda.is_available():
@@ -47,20 +80,7 @@ def run_test(args_dict):
 
     best_sensit, model, optimizer = utils.resume(args_dict, model, optimizer)
 
-    val_transforms = transforms.Compose([
-        transforms.Resize(256),                             # rescale the image keeping the original aspect ratio
-        transforms.CenterCrop(256),                         # we get only the center of that rescaled
-        transforms.RandomCrop(224),                         # random crop within the center crop (data augmentation)
-        transforms.ToTensor()                               # to pytorch tensor
-    ])
-
-    # Data loading for test
-    # preprocess the given txt files: Test
-    _, data_test, labels_test, _, _ = data.preprocessSplit(args_dict.test_txt)
-    # create Datasets
-    test_dataset = data.Dataset(data_test, labels_test, args_dict.test_folder, transform=val_transforms)
-    # create data loader
-    dl_test = DataLoader(test_dataset, batch_size=args_dict.batch, shuffle=False,  num_workers=1)
+    dl_test = calculateDataLoaderTest(args_dict)
 
     valEpoch(args_dict, dl_test, model)
 

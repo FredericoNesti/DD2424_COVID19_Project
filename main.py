@@ -2,6 +2,7 @@ import time
 
 from train import run_train
 from eval import run_test
+from calibration import run_calibration, plot_calibration
 from params import get_parser
 
 if __name__ == "__main__":
@@ -17,6 +18,10 @@ if __name__ == "__main__":
 
     elif args_dict.mode == 'test':
         run_test(args_dict)
+
+    elif args_dict.mode == 'calibration':
+        # run_calibration(args_dict)
+        plot_calibration(args_dict)
 
     elapsed_time = time.time() - start_time
     time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
