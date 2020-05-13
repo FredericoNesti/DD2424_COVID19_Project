@@ -115,8 +115,13 @@ class CovidNet(nn.Module):
         pepx43 = self.pexp4_3(pepx41 + pepx42 + out_conv4_1x1)
 
         # FINAL CHUNK
-        flattened = self.flatten(pepx41 + pepx42 + pepx43 + out_conv4_1x1)
 
+        # for grad cam
+        activations = pepx41 + pepx42 + pepx43 + out_conv4_1x1
+        h = activations.register_hook(self.activations_hook)
+
+        # flattened = self.flatten(pepx41 + pepx42 + pepx43 + out_conv4_1x1)
+        flattened = self.flatten(activations)
         fc1out = F.relu(self.fc1(flattened))
         fc2out = F.relu(self.fc2(fc1out))
         logits = self.classifier(fc2out)
@@ -139,6 +144,66 @@ class CovidNet(nn.Module):
             pp += nn
 
         return pp
+
+    # grad cam from this tutorial: https://medium.com/@stepanulyanin/implementing-grad-cam-in-pytorch-ea0937c31e82
+    # hook for the gradients of the activations
+    def activations_hook(self, grad):
+        self.gradients = grad
+
+    # method for the gradient extraction
+    def get_activations_gradient(self):
+        return self.gradients
+
+    # method to get activations
+    def get_activations(self, img):
+        # CHUNK 0
+        out_conv7 = F.max_pool2d(F.relu(self.conv1_7x7(img)), 2)
+
+        # CHUNK 1
+        out_conv1_1x1 = self.conv1_1x1(out_conv7)
+
+        pepx11 = self.pexp1_1(out_conv7)
+        pepx12 = self.pexp1_2(pepx11 + out_conv1_1x1)
+        pepx13 = self.pexp1_3(pepx12 + pepx11 + out_conv1_1x1)
+
+        # CHUNK 2
+        out_conv2_1x1 = F.max_pool2d(self.conv2_1x1(pepx12 + pepx11 + pepx13 + out_conv1_1x1), 2)
+
+        pepx21 = self.pexp2_1(
+            F.max_pool2d(pepx13, 2) + F.max_pool2d(pepx11, 2) + F.max_pool2d(pepx12, 2) + F.max_pool2d(out_conv1_1x1,
+                                                                                                       2))
+        pepx22 = self.pexp2_2(pepx21 + out_conv2_1x1)
+        pepx23 = self.pexp2_3(pepx22 + pepx21 + out_conv2_1x1)
+        pepx24 = self.pexp2_4(pepx23 + pepx21 + pepx22 + out_conv2_1x1)
+
+        # CHUNK 3
+        out_conv3_1x1 = F.max_pool2d(self.conv3_1x1(pepx22 + pepx21 + pepx23 + pepx24 + out_conv2_1x1), 2)
+
+        pepx31 = self.pexp3_1(
+            F.max_pool2d(pepx24, 2) + F.max_pool2d(pepx21, 2) + F.max_pool2d(pepx22, 2) + F.max_pool2d(pepx23,
+                                                                                                       2) + F.max_pool2d(
+                out_conv2_1x1, 2))
+        pepx32 = self.pexp3_2(pepx31 + out_conv3_1x1)
+        pepx33 = self.pexp3_3(pepx31 + pepx32 + out_conv3_1x1)
+        pepx34 = self.pexp3_4(pepx31 + pepx32 + pepx33 + out_conv3_1x1)
+        pepx35 = self.pexp3_5(pepx31 + pepx32 + pepx33 + pepx34 + out_conv3_1x1)
+        pepx36 = self.pexp3_6(pepx31 + pepx32 + pepx33 + pepx34 + pepx35 + out_conv3_1x1)
+
+        # CHUNK 4
+        out_conv4_1x1 = F.max_pool2d(
+            self.conv4_1x1(pepx31 + pepx32 + pepx33 + pepx34 + pepx35 + pepx36 + out_conv3_1x1), 2)
+
+        pepx41 = self.pexp4_1(
+            F.max_pool2d(pepx31, 2) + F.max_pool2d(pepx32, 2) + F.max_pool2d(pepx32, 2) + F.max_pool2d(pepx34,
+                                                                                                       2) + F.max_pool2d(
+                pepx35, 2) + F.max_pool2d(pepx36, 2) + F.max_pool2d(out_conv3_1x1, 2))
+        pepx42 = self.pexp4_2(pepx41 + out_conv4_1x1)
+        pepx43 = self.pexp4_3(pepx41 + pepx42 + out_conv4_1x1)
+
+        activations = pepx41 + pepx42 + pepx43 + out_conv4_1x1
+
+        return activations
+
 
 
 
