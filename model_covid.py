@@ -68,6 +68,9 @@ class CovidNet(nn.Module):
         self.add_module('fc2', nn.Linear(1024, 256))
         self.add_module('classifier', nn.Linear(256, n_classes))
 
+        # grad cam
+        self.gradients = None
+
 
     def forward(self, img):
         # CHUNK 0
