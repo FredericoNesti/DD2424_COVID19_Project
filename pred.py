@@ -22,7 +22,7 @@ def grad_cam(model, x_batch):
     gradcam = GradCAM.from_config(arch=model._modules['resnet'], model_type='resnet', layer_name='7')
     mask, _ = gradcam(x_batch)
     heatmap, result = visualize_cam(mask, x_batch)
-    result =  result.numpy().transpose(1, 2, 0)
+    result = transforms.ToPILImage()(result)
     return heatmap,result
 
 
@@ -103,9 +103,13 @@ def predict(x_batch, model, args_dict): # call this function to get the gradcam 
 
     if args_dict.model == 'resnet':
         heatmap, image = grad_cam(model, x_batch)
+        image.show()
+        image.save('./resnetpic.jpg')
     elif args_dict.model == 'covidnet':
         heatmap, image = grad_cam_covid(model, x_batch, output, pred)
-    cv2.imshow('map', image)
+        cv2.imshow('map', image)
+        image = cv2.convertScaleAbs(image, alpha=(255.0))
+        cv2.imwrite('./covidpic.jpg', image)
 
     return heatmap, image, output
 
