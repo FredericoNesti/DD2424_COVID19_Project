@@ -29,7 +29,7 @@ def resume(args_dict, model, optimizer):
         model_path = args_dict.dir_model + args_dict.model + '_best_model.pth.tar'
         if os.path.isfile(model_path):
             print("=> loading checkpoint '{}'".format(args_dict.resume))
-            checkpoint = torch.load(model_path)
+            checkpoint = torch.load(model_path, map_location=torch.device(args_dict.device))
             args_dict.start_epoch = checkpoint['epoch']
             best_sensit = checkpoint['best_sensit']
             model.load_state_dict(checkpoint['state_dict'])

@@ -4,7 +4,7 @@ from train import run_train
 from eval import run_test
 from calibration import run_calibration, plot_calibration
 from params import get_parser
-from pred import run_prediction
+from gradcam import run_gradcam
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -20,12 +20,11 @@ if __name__ == "__main__":
     elif args_dict.mode == 'test':
         run_test(args_dict)
 
-    elif args_dict.mode == 'predict':
-        run_prediction(args_dict)
+    elif args_dict.mode == 'gradcam':
+        run_gradcam(args_dict)
 
     elif args_dict.mode == 'calibration':
-        # run_calibration(args_dict)
-        plot_calibration(args_dict)
+        run_calibration(args_dict)
 
     elapsed_time = time.time() - start_time
     time.strftime("%H:%M:%S", time.gmtime(elapsed_time))

@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from torchvision import models
 import torch.nn.functional as F
@@ -121,7 +120,7 @@ class CovidNet(nn.Module):
 
         # for grad cam
         activations = pepx41 + pepx42 + pepx43 + out_conv4_1x1
-        h = activations.register_hook(self.activations_hook)
+        # h = activations.register_hook(self.activations_hook)
 
         # flattened = self.flatten(pepx41 + pepx42 + pepx43 + out_conv4_1x1)
         flattened = self.flatten(activations)
@@ -136,7 +135,6 @@ class CovidNet(nn.Module):
 
     def get_n_params(self):
         """
-
         :return: number of parameters of this model
         """
         pp = 0

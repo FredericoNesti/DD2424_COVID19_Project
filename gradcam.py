@@ -3,18 +3,15 @@ import numpy as np
 from gradcam import GradCAM, GradCAMpp
 from gradcam.utils import visualize_cam
 
-from sklearn.metrics import accuracy_score, confusion_matrix
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.utils import make_grid
-from matplotlib import pyplot as plt
 
 import data
 import utils
+import eval
 from model_covid import CovidNet, ResNet
 import cv2
-from PIL import Image
-
+from matplotlib import pyplot as plt
 
 
 # Grad-Cam implementation from:  https://github.com/vickyliin/gradcam_plus_plus-pytorch
@@ -51,7 +48,10 @@ def grad_cam_covid(model, x_batch, output, pred):
     heatmap /= torch.max(heatmap)
     return apply_heatmap(heatmap, x_batch)
 
-def run_prediction(args_dict): # for testing the graca -- dataloader with only 1 image
+
+def run_gradcam(args_dict): # call this function to get the gradcam pictures and output - only for one picture
+    print("Start test of model...")
+    args_dict.batch = 1
 
     # Set up device
     if torch.cuda.is_available():
@@ -61,6 +61,7 @@ def run_prediction(args_dict): # for testing the graca -- dataloader with only 1
         args_dict.device = torch.device("cpu")
         print("Running on the CPU")
 
+    args_dict.resume = True
     # Define model
     if args_dict.model == "covidnet":
         model = CovidNet(args_dict.n_classes)
@@ -72,32 +73,12 @@ def run_prediction(args_dict): # for testing the graca -- dataloader with only 1
 
     best_sensit, model, optimizer = utils.resume(args_dict, model, optimizer)
 
-    val_transforms = transforms.Compose([
-        transforms.Resize(256),                             # rescale the image keeping the original aspect ratio
-        transforms.CenterCrop(256),                         # we get only the center of that rescaled
-        transforms.RandomCrop(224),                         # random crop within the center crop (data augmentation)
-        transforms.ToTensor()                               # to pytorch tensor
-    ])
-
-    # Data loading for test
-    # preprocess the given txt files: Test
-    _, data_pred, labels_pred, _, _ = data.preprocessSplit(args_dict.predict_txt)
-
-
-    # create Datasets
-    pred_dataset = data.Dataset(data_pred, labels_pred, args_dict.test_folder, transform=val_transforms)
-    # create data loader
-    dl_pred = DataLoader(pred_dataset, batch_size=args_dict.batch, shuffle=False,  num_workers=1)
-
-    # switch to evaluation mode
-    model.eval()
-
-    for batch_idx, (x_batch, y_batch, _) in enumerate(dl_pred):
+    dl_test = eval.calculateDataLoaderTest(args_dict)
+    for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
+        if batch_idx == 2:
+            break
 
-    predict(x_batch, model, args_dict)
-
-def predict(x_batch, model, args_dict): # call this function to get the gradcam pictures and output - only for one picture
     output = model(x_batch)
     pred = np.argmax(output.cpu().data.numpy(), axis=1)
 
@@ -105,7 +86,13 @@ def predict(x_batch, model, args_dict): # call this function to get the gradcam 
         heatmap, image = grad_cam(model, x_batch)
     elif args_dict.model == 'covidnet':
         heatmap, image = grad_cam_covid(model, x_batch, output, pred)
-    cv2.imshow('map', image)
+
+
+    # plt.imshow(image, interpolation='nearest')
+    print(heatmap.shape)
+    print(image.shape)
+    plt.imshow(heatmap)
+    plt.show()
 
     return heatmap, image, output
 

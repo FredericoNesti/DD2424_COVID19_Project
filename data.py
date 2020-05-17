@@ -1,9 +1,7 @@
 from torch.utils import data
 import numpy as np
 import os
-import cv2
 from PIL import Image
-from matplotlib import pyplot as plt
 import torch
 from torchvision import transforms as tf
 
@@ -74,8 +72,6 @@ class Dataset(data.Dataset):
         im_pil = image.resize(self.input_shape)
 
         if self.transform: # see https://stackoverflow.com/questions/43232813/convert-opencv-image-format-to-pil-image-format
-            #plt.imshow(np.asarray(im_pil))
-            #plt.show()
             X = self.transform(im_pil)
         else:
             transformer_tf = tf.ToTensor()

@@ -16,8 +16,8 @@ def calculateDataLoaderTest(args_dict):
     """
     val_transforms = transforms.Compose([
         transforms.Resize(256),  # rescale the image keeping the original aspect ratio
-        transforms.CenterCrop(256),  # we get only the center of that rescaled
-        transforms.RandomCrop(224),  # random crop within the center crop (data augmentation)
+        transforms.CenterCrop(224),  # we get only the center of that rescaled
+        # transforms.RandomCrop(224),  # random crop within the center crop (data augmentation)
         transforms.ToTensor()  # to pytorch tensor
     ])
 
@@ -40,7 +40,7 @@ def valEpoch(args_dict, dl_test, model, calibration=False):
     model.eval()
     for batch_idx, (x_batch, y_batch, _) in enumerate(dl_test):
         x_batch, y_batch = x_batch.to(args_dict.device), y_batch.to(args_dict.device)
-        prob = model(x_batch).cpu().data.numpy()
+        prob = model(x_batch).data.numpy()
         y_hat = np.argmax(prob, axis=1)
         # Save embeddings to compute metrics
         if batch_idx == 0:
@@ -57,6 +57,7 @@ def valEpoch(args_dict, dl_test, model, calibration=False):
 
     return create_metrics(y_test, pred)
 
+
 def run_test(args_dict):
 
     print("Start test of model...")
@@ -69,6 +70,7 @@ def run_test(args_dict):
         args_dict.device = torch.device("cpu")
         print("Running on the CPU")
 
+    args_dict.resume = True
     # Define model
     if args_dict.model == "covidnet":
         model = CovidNet(args_dict.n_classes)
@@ -97,7 +99,6 @@ def create_metrics(y_test, pred):
 
     acc = accuracy_score(y_test, pred)
     print("Accuracy", acc)
-
 
     # From COVIDNET
     class_acc = [matrix[i, i] / np.sum(matrix[i, :]) if np.sum(matrix[i, :]) else 0 for i in range(len(matrix))]

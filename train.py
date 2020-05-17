@@ -5,7 +5,6 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-# import Augmentate
 import data
 import utils
 import eval
@@ -56,7 +55,7 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
 
         x_batch = torch.cat((x_batch_nc, x_batch_c)).to(args_dict.device)
         y_batch = torch.cat((y_batch_nc, y_batch_c)).to(args_dict.device)
-        # weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)  # What should we do with it?
+        # weights = torch.cat((weights_nc, weights_c)).to(args_dict.device)
 
         # Model output
         output = model(x_batch)
@@ -80,10 +79,6 @@ def trainEpoch(args_dict, dl_non_covid, dl_covid, model, criterion, optimizer, e
               'Accuracy {accuracy.val:.4f} ({accuracy.avg:.4f})\t'.format(
                epoch, batch_idx, len(dl_non_covid), 100. * batch_idx / len(dl_non_covid),
                loss=losses, accuracy=accuracies))
-
-        # Debug
-        # if batch_idx == 5:
-        #     break
 
     # Plot loss
     plotter.plot('loss', 'train', 'Cross Entropy Loss', epoch, losses.avg)
@@ -132,6 +127,7 @@ def train_model(args_dict):
         if accuracy >= 0.80:  # only compare sensitivity if we have a minimum accuracy of 0.8
             is_best = sensitivity_covid > best_sensit
             if is_best:
+                print("BEST MODEL FOUND!")
                 best_sensit = max(sensitivity_covid, best_sensit)
                 utils.save_model(args_dict, {
                     'epoch': epoch + 1,
