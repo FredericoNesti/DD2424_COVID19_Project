@@ -3,7 +3,7 @@
 ## Setup infrastructure
 - sign up and use the credits (svenja sign up, Matheus setup project)
 
-## Data part --> fred implement and see if it can be split up and tell us
+## Data part 
 
 idea: https://stanford.edu/~shervine/blog/pytorch-how-to-generate-data-parallel
 
@@ -15,7 +15,7 @@ test_COVIDx2.txt: This file contains the samples used for testing COVIDNet-CXR.)
 - data augmentation was leveraged with the following augmentation types: translation, rotation, horizontal flip, and intensity shift
 - batch re-balancing strategy to promote better distribution of each infection type at a batch level  --> done in data.py (Covid Net)
 
-## Network architecture (Matheus)
+## Network architecture 
 - We will implement the following architecture for COVID-NET:
 ![COVID-Net Architecture.](images/COVID-NET.png)
 
@@ -45,7 +45,7 @@ When we have muldiple dimentions on image of feature map: <a href="https://www.r
 1x1 convolutions : <a href="https://machinelearningmastery.com/introduction-to-1x1-convolutions-to-reduce-the-complexity-of-convolutional-neural-networks/"> link </a> 
 
 
-## Training (Svenja)
+## Training 
 - pretrained on ImageNet dataset
 - trained on COVIDx dataset using g the Adam optimizer using a learning rate policy where the learning rate decreases when learning  stagnates for a period of time (i.e., ’patience’)
 -  The following hyperparameters were used for training: learning rate=2e-5, number
@@ -53,7 +53,7 @@ of epochs=22, batch size=8, factor=0.7, patience=5
 
 -->  done in train_tf.py (Covid Net) 
 
-## Evaluating results (Svenja)
+## Evaluating results 
 ### Quantitative: 
 -  computed the test accuracy, as well as sensitivity and positive predictive value (PPV) for each infection type, on the aforementioned COVIDx dataset
 -  sensitivity and PPV for each infection type
